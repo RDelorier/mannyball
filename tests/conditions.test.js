@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CONDITIONS, conditionById } from '../src/conditions.js';
+import { CONDITIONS, conditionById, unlockedConditions } from '../src/conditions.js';
+
+test('conditions unlock by battle-pass level (Clear always free)', () => {
+  assert.deepEqual(unlockedConditions(0).map((c) => c.id), ['clear']);
+  const at27 = unlockedConditions(27).map((c) => c.id);
+  assert.ok(at27.includes('rain') && at27.includes('wind'));
+  assert.ok(!at27.includes('fog'));
+  assert.equal(unlockedConditions(29).length, CONDITIONS.length);
+});
 
 test('conditionById returns the match, or clear as default', () => {
   assert.equal(conditionById('rain').id, 'rain');

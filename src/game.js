@@ -12,7 +12,7 @@ import {
   REWARD_TRACK, BALL_SKINS, unlockedBalls, unlockedFields, currentTitle, newRewards,
 } from './teams.js';
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
-import { CONDITIONS, conditionById } from './conditions.js';
+import { conditionById, unlockedConditions } from './conditions.js';
 
 // Each timing bar gets a fresh randomized sweet spot (see randomSweet).
 
@@ -152,7 +152,7 @@ function showStart() {
   populateTeamSelect(el('away-team'), config.awayTeam);
   populateOptionSelect(el('ball-select'), unlockedBalls(progress), config.ball);
   populateOptionSelect(el('field-select'), unlockedFields(progress), config.field);
-  populateOptionSelect(el('condition-select'), CONDITIONS, config.condition);
+  populateOptionSelect(el('condition-select'), unlockedConditions(levelForXp(progress.xp)), config.condition);
   showScreen(startScreen);
 }
 
