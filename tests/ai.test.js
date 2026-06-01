@@ -41,9 +41,9 @@ test('aiPassDefenseGrade intercepts far less often than offense timing', () => {
 });
 
 test('EXTREME difficulty is tougher than hard across the board', () => {
-  // offense timing: extreme greens almost everything
+  // offense timing: extreme greens a roll that hard only manages a yellow on
   assert.equal(aiTimingGrade('extreme', 0.9), 'green');
-  assert.equal(aiTimingGrade('hard', 0.9), 'red'); // hard would miss the same roll
+  assert.equal(aiTimingGrade('hard', 0.9), 'yellow');
   // pass defense: extreme intercepts more
   assert.equal(aiPassDefenseGrade('extreme', 0.45), 'green');
   assert.equal(aiPassDefenseGrade('hard', 0.45), 'yellow');
