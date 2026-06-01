@@ -13,6 +13,11 @@ export const TEAMS = [
   { id: 'robots',   emoji: '🤖', name: 'Robots',   unlock: { type: 'level', n: 4 } },
   { id: 'aliens',   emoji: '👽', name: 'Aliens',   unlock: { type: 'level', n: 6 } },
   { id: 'dragons',  emoji: '🐉', name: 'Dragons',  unlock: { type: 'level', n: 8 } },
+  // Retro pack — arcade-themed teams unlocked at the higher battle-pass tiers.
+  { id: 'invaders', emoji: '👾', name: 'Invaders', unlock: { type: 'level', n: 10 } },
+  { id: 'joystick', emoji: '🕹️', name: 'Joysticks', unlock: { type: 'level', n: 12 } },
+  { id: 'ghosts',   emoji: '👻', name: 'Ghosts',   unlock: { type: 'level', n: 14 } },
+  { id: 'ufos',     emoji: '🛸', name: 'UFOs',     unlock: { type: 'level', n: 16 } },
 ];
 
 const XP_PER_LEVEL = 250;

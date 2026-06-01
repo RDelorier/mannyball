@@ -39,6 +39,15 @@ test('isUnlocked: wins / hardWins / highScore / level conditions', () => {
   assert.equal(isUnlocked(teamById('dragons'), { ...ZERO, xp: 250 }), false);
 });
 
+test('retro team pack unlocks at higher battle-pass levels', () => {
+  assert.equal(teamById('invaders').unlock.n, 10);
+  assert.equal(teamById('ufos').unlock.n, 16);
+  // locked until you reach the level, unlocked once you do
+  assert.equal(isUnlocked(teamById('invaders'), { ...ZERO, xp: 250 * 8 }), false); // Lv 9
+  assert.equal(isUnlocked(teamById('invaders'), { ...ZERO, xp: 250 * 9 }), true);  // Lv 10
+  assert.equal(unlockLabel(teamById('ghosts')), 'Reach Lv 14');
+});
+
 test('unlockLabel describes the requirement', () => {
   assert.equal(unlockLabel(teamById('eagles')), '');
   assert.equal(unlockLabel(teamById('rams')), 'Win 1 game');
