@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1D Football</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Start screen -->
+  <section id="start-screen" class="screen">
+    <h1>1D FOOTBALL</h1>
+    <div class="menu">
+      <label>Mode
+        <select id="mode-select">
+          <option value="ai">1 Player vs AI</option>
+          <option value="2p">2 Players</option>
+        </select>
+      </label>
+      <label>Difficulty
+        <select id="difficulty-select">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+      <label>Points to win
+        <select id="target-select">
+          <option value="14">14</option>
+          <option value="21" selected>21</option>
+          <option value="28">28</option>
+        </select>
+      </label>
+      <button id="start-btn">KICK OFF</button>
+    </div>
+    <p class="controls-hint">
+      Home: <kbd>A</kbd> &nbsp; Away: <kbd>L</kbd> &nbsp; Catch/Defend: <kbd>SPACE</kbd>
+    </p>
+  </section>
+
+  <!-- Game screen -->
+  <section id="game-screen" class="screen hidden">
+    <div id="scoreboard">
+      <span class="team home">HOME <b id="score-home">0</b></span>
+      <span id="game-status">1st &amp; 10</span>
+      <span class="team away"><b id="score-away">0</b> AWAY</span>
+    </div>
+
+    <div id="field">
+      <div class="endzone home-zone"><span>HOME</span></div>
+      <div id="gridiron">
+        <div id="ball">🏈</div>
+        <div id="defenders"></div>
+        <div id="firstdown-line"></div>
+      </div>
+      <div class="endzone away-zone"><span>AWAY</span></div>
+    </div>
+
+    <div id="message"></div>
+
+    <div id="playcall" class="hidden">
+      <button data-play="rush">RUSH</button>
+      <button data-play="pass">PASS</button>
+      <button data-play="fieldgoal" class="fourth-only hidden">FIELD GOAL</button>
+      <button data-play="punt" class="fourth-only hidden">PUNT</button>
+    </div>
+
+    <div id="kickoff-choice" class="hidden">
+      <button data-kick="regular">REGULAR KICKOFF</button>
+      <button data-kick="onside">ONSIDE KICK</button>
+    </div>
+
+    <div id="timing-bar" class="hidden">
+      <div class="bar-track">
+        <div class="sweet-zone"></div>
+        <div class="bar-marker"></div>
+      </div>
+      <p class="timing-hint">Press your key in the green!</p>
+    </div>
+  </section>
+
+  <!-- Win screen -->
+  <section id="win-screen" class="screen hidden">
+    <h1 id="win-text">HOME WINS!</h1>
+    <button id="replay-btn">PLAY AGAIN</button>
+  </section>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>

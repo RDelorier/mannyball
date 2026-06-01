@@ -1,0 +1,86 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  background: #0b3d0b;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen {
+  width: min(960px, 96vw);
+  padding: 24px;
+  text-align: center;
+}
+.hidden { display: none !important; }
+
+h1 { font-size: 3rem; letter-spacing: 4px; margin-bottom: 24px; text-shadow: 2px 2px 0 #000; }
+
+.menu { display: inline-flex; flex-direction: column; gap: 14px; font-size: 1.2rem; }
+.menu label { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.menu select { font-size: 1rem; padding: 4px 8px; }
+button {
+  font-size: 1.2rem; font-weight: bold; padding: 10px 18px; cursor: pointer;
+  background: #ffcc00; color: #111; border: none; border-radius: 4px; letter-spacing: 1px;
+}
+button:hover { background: #ffe066; }
+.controls-hint { margin-top: 22px; opacity: 0.85; }
+kbd { background: #111; border: 1px solid #555; border-radius: 3px; padding: 1px 6px; }
+
+#scoreboard {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #111; padding: 10px 18px; border-radius: 6px; font-size: 1.4rem; margin-bottom: 16px;
+}
+.team b { font-size: 1.8rem; }
+.team.home b { color: #4da6ff; }
+.team.away b { color: #ff6b6b; }
+#game-status { font-size: 1.1rem; opacity: 0.9; }
+
+#field {
+  display: flex; height: 140px; border: 3px solid #fff; border-radius: 4px; overflow: hidden;
+}
+.endzone {
+  width: 60px; display: flex; align-items: center; justify-content: center;
+  writing-mode: vertical-rl; text-orientation: upright; font-weight: bold; letter-spacing: 2px;
+}
+.home-zone { background: #1a4f8a; }
+.away-zone { background: #8a1a1a; }
+
+#gridiron {
+  position: relative; flex: 1;
+  background:
+    repeating-linear-gradient(90deg, #1f7a1f 0 9.8%, #2a8a2a 9.8% 10%),
+    #1f7a1f;
+}
+#ball {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); font-size: 1.6rem;
+  transition: left 0.4s ease;
+}
+#firstdown-line {
+  position: absolute; top: 0; bottom: 0; width: 3px; background: #ffd700;
+}
+#defenders .defender {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  font-size: 1.3rem;
+}
+
+#message { min-height: 28px; font-size: 1.3rem; font-weight: bold; margin: 12px 0; }
+
+#playcall, #kickoff-choice { display: flex; gap: 12px; justify-content: center; margin: 10px 0; }
+
+#timing-bar { margin-top: 8px; }
+.bar-track {
+  position: relative; height: 28px; background: #222; border-radius: 14px;
+  overflow: hidden; max-width: 520px; margin: 0 auto;
+}
+.sweet-zone {
+  position: absolute; top: 0; bottom: 0; background: #2ecc40; opacity: 0.55;
+}
+.bar-marker {
+  position: absolute; top: 0; bottom: 0; width: 4px; background: #fff;
+}
+.timing-hint { margin-top: 6px; opacity: 0.85; }
