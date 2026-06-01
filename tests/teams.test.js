@@ -80,8 +80,8 @@ test('updateStats: a loss adds participation XP only', () => {
   assert.equal(after.xp, 50);
 });
 
-test('REWARD_TRACK covers levels 1..29 in order', () => {
-  assert.equal(REWARD_TRACK.length, 29);
+test('REWARD_TRACK covers levels 1..25 in order', () => {
+  assert.equal(REWARD_TRACK.length, 25);
   REWARD_TRACK.forEach((r, i) => assert.equal(r.level, i + 1));
 });
 

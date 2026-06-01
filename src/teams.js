@@ -140,10 +140,6 @@ export const REWARD_TRACK = [
   { level: 23, kind: 'field', value: 'lava',     emoji: '🌋', label: 'Field: Lava' },
   { level: 24, kind: 'ball',  value: 'diamond',  emoji: '💎', label: 'Ball: Diamond' },
   { level: 25, kind: 'title', value: 'G.O.A.T.', emoji: '🐐', label: 'Title: G.O.A.T.' },
-  { level: 26, kind: 'condition', value: 'rain', emoji: '🌧️', label: 'Weather: Rain' },
-  { level: 27, kind: 'condition', value: 'wind', emoji: '💨', label: 'Weather: Wind' },
-  { level: 28, kind: 'condition', value: 'snow', emoji: '❄️', label: 'Weather: Snow' },
-  { level: 29, kind: 'condition', value: 'fog',  emoji: '🌫️', label: 'Weather: Fog' },
 ];
 
 // Unlocked ball skins for the given progress (always includes the default).

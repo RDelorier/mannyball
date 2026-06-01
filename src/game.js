@@ -12,7 +12,7 @@ import {
   REWARD_TRACK, BALL_SKINS, unlockedBalls, unlockedFields, currentTitle, newRewards,
 } from './teams.js';
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
-import { conditionById, unlockedConditions } from './conditions.js';
+import { CONDITIONS, conditionById } from './conditions.js';
 
 // Each timing bar gets a fresh randomized sweet spot (see randomSweet).
 
@@ -153,7 +153,7 @@ function showStart() {
   populateTeamSelect(el('away-team'), config.awayTeam);
   populateOptionSelect(el('ball-select'), unlockedBalls(progress), config.ball);
   populateOptionSelect(el('field-select'), unlockedFields(progress), config.field);
-  populateOptionSelect(el('condition-select'), unlockedConditions(levelForXp(progress.xp)), config.condition);
+  populateOptionSelect(el('condition-select'), CONDITIONS, config.condition);
   showScreen(startScreen);
 }
 
@@ -517,8 +517,8 @@ function overthrow() {
 
 // Occasionally the weather rolls in/out mid-game. Returns true if it changed.
 function maybeChangeWeather() {
-  const options = unlockedConditions(levelForXp(progress.xp));
-  if (options.length < 2) return false;        // only Clear unlocked → nothing to change to
+  const options = CONDITIONS;
+  if (options.length < 2) return false;
   if (Math.random() > 0.15) return false;       // ~15% chance per down
   const pick = options[Math.floor(Math.random() * options.length)];
   if (pick.id === config.condition) return false;
