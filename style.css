@@ -297,41 +297,39 @@ kbd {
 #playcall, #kickoff-choice { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 10px 0; position: relative; z-index: 5; }
 #timing-bar { position: relative; z-index: 5; }
 
-/* ---- Timing bar (arcade power meter) ---- */
-#timing-bar { margin-top: 10px; }
+/* ---- Timing bar: a semicircular RAINBOW ARC gauge ---- */
+#timing-bar { margin-top: 10px; display: flex; flex-direction: column; align-items: center; }
+
+/* The bar itself is a rainbow arc: a conic rainbow masked to a top half-ring. */
 .bar-track {
-  position: relative; height: 30px; max-width: 560px; margin: 0 auto;
-  background: #04130a; border: 2px solid var(--line); border-radius: 16px; overflow: hidden;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.75);
-  transition: background 0.1s, border-color 0.1s;
+  position: relative; width: 300px; height: 150px;
+  background: conic-gradient(from -90deg at 50% 100%,
+    #ff004d 0deg, #ff8a00 30deg, #ffe600 60deg, #00e676 90deg,
+    #00b0ff 120deg, #7c4dff 175deg, transparent 180deg);
+  -webkit-mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
+  mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
 }
-.bar-track.miss { background: #3a0000; border-color: #ff3b3b; }
-.sweet-zone { position: absolute; top: 0; bottom: 0; background: var(--green); opacity: 0.7; box-shadow: 0 0 18px var(--green); }
-/* Rainbow arc: concentric color bands around a bottom-centered point form a dome. */
+.bar-track.miss { filter: drop-shadow(0 0 10px #ff3b3b) saturate(0.3) brightness(0.6); }
+
+/* Green target wedge — JS sets the conic-gradient angles each press. */
+.sweet-zone {
+  position: absolute; inset: 0;
+  -webkit-mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
+  mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
+  filter: drop-shadow(0 0 6px var(--green));
+}
+
+/* Marker is a needle pivoting at the arc's center; JS rotates it. */
 .bar-marker {
-  position: absolute; top: 50%; left: 0; width: 48px; height: 24px;
-  background: radial-gradient(circle at 50% 100%,
-    transparent 0 5px,
-    #7c4dff 5px 7.7px,
-    #00b0ff 7.7px 10.4px,
-    #00e676 10.4px 13.1px,
-    #ffe600 13.1px 15.8px,
-    #ff8a00 15.8px 18.5px,
-    #ff004d 18.5px 21px,
-    transparent 21px);
-  will-change: transform, filter;
-  animation: rainbow-hue 1.1s linear infinite;
-  pointer-events: none;
+  position: absolute; left: calc(50% - 2px); bottom: 0; width: 4px; height: 134px;
+  transform-origin: 50% 100%; transform: rotate(0deg);
+  background: #fff; border-radius: 2px; box-shadow: 0 0 8px #fff;
+  pointer-events: none; will-change: transform;
 }
-@keyframes rainbow-hue {
-  from { filter: hue-rotate(0deg) drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); }
-  to { filter: hue-rotate(360deg) drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); }
-}
-/* On a graded press, freeze the arc and tint it with feedback. */
-.bar-marker.green, .bar-marker.yellow, .bar-marker.red { animation: none; }
-.bar-marker.green { filter: drop-shadow(0 0 12px var(--green)) brightness(1.3); }
-.bar-marker.yellow { filter: drop-shadow(0 0 12px var(--amber)); }
-.bar-marker.red { filter: drop-shadow(0 0 12px #ff3b3b) saturate(0.25) brightness(0.55); }
+.bar-marker.green { background: var(--green); box-shadow: 0 0 12px var(--green); }
+.bar-marker.yellow { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
+.bar-marker.red { background: #ff3b3b; box-shadow: 0 0 12px #ff3b3b; }
 .timing-hint { margin-top: 8px; opacity: 0.85; letter-spacing: 1px; }
 
 /* Overthrow: the ball sails up into the crowd. */
@@ -347,7 +345,7 @@ body.extreme #field {
   box-shadow: 0 0 40px rgba(255, 59, 59, 0.5), inset 0 0 50px rgba(0, 0, 0, 0.55);
   animation: extreme-pulse 1.2s ease-in-out infinite;
 }
-body.extreme .bar-track { border-color: #ff3b3b; }
+body.extreme .bar-track { filter: drop-shadow(0 0 12px #ff3b3b); }
 body.extreme #game-status { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 59, 59, 0.6); }
 @keyframes extreme-pulse {
   0%, 100% { box-shadow: 0 0 30px rgba(255, 59, 59, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.55); }

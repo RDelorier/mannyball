@@ -320,10 +320,13 @@ function runTimingBar(key, hint) {
   const track = bar.querySelector('.bar-track');
   bar.querySelector('.timing-hint').textContent = hint;
 
-  // Randomize the sweet spot's position and size for this press.
+  // Randomize the sweet spot's position and size for this press, drawn as a
+  // green wedge on the arc (0..100 maps to 0..180deg of the semicircle).
   const sweet = randomSweet();
-  zone.style.left = (sweet.center - sweet.green) + '%';
-  zone.style.width = (sweet.green * 2) + '%';
+  const cone = (v) => (v / 100) * 180;
+  const a1 = Math.max(0, cone(sweet.center) - cone(sweet.green));
+  const a2 = Math.min(180, cone(sweet.center) + cone(sweet.green));
+  zone.style.background = `conic-gradient(from -90deg at 50% 100%, transparent 0 ${a1}deg, rgba(46,204,64,0.85) ${a1}deg ${a2}deg, transparent ${a2}deg)`;
 
   marker.classList.remove('green', 'yellow', 'red');
   track.classList.remove('miss');
@@ -331,7 +334,6 @@ function runTimingBar(key, hint) {
 
   return new Promise((resolve) => {
     let pos = 0, dir = 1, rafId = 0, last = null;
-    const trackW = track.clientWidth || 520;
     // percent/second (BAR_SPEED was tuned per-frame at ~60fps), time-based for smoothness
     const perSec = (BAR_SPEED[config.difficulty] || 1.4) * cond().barSpeedMult * 60;
 
@@ -361,7 +363,7 @@ function runTimingBar(key, hint) {
       pos += dir * perSec * dt;
       if (pos >= 100) { pos = 100; dir = -1; }
       if (pos <= 0) { pos = 0; dir = 1; }
-      marker.style.transform = `translate(calc(${(pos / 100) * trackW}px - 50%), -50%)`;
+      marker.style.transform = `rotate(${(pos / 100) * 180 - 90}deg)`; // sweep across the arc
       rafId = requestAnimationFrame(frame);
     }
 
