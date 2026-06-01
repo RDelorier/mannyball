@@ -19,6 +19,7 @@ const el = (id) => document.getElementById(id);
 const startScreen = el('start-screen');
 const gameScreen = el('game-screen');
 const winScreen = el('win-screen');
+const bpScreen = el('bp-screen');
 
 // ---- Persistent progress (localStorage) ----
 const SAVE_KEY = '1dfb-progress';
@@ -73,7 +74,7 @@ function distanceToGain() {
   return Math.abs(state.lineToGain - state.ballOn);
 }
 function showScreen(screen) {
-  for (const s of [startScreen, gameScreen, winScreen]) s.classList.add('hidden');
+  for (const s of [startScreen, gameScreen, winScreen, bpScreen]) s.classList.add('hidden');
   screen.classList.remove('hidden');
 }
 function setMessage(text) {
@@ -121,6 +122,32 @@ function showStart() {
   populateTeamSelect(el('home-team'), config.homeTeam);
   populateTeamSelect(el('away-team'), config.awayTeam);
   showScreen(startScreen);
+}
+
+// Battle-pass screen: level/XP summary + every level-gated tier and its status.
+function showBattlePass() {
+  const { level, into, needed } = bpProgress(progress.xp);
+  el('bp-summary').textContent = `⭐ Lv ${level} — ${into} / ${needed} XP`;
+  el('bp-screen-fill').style.width = (100 * into / needed) + '%';
+
+  const list = el('bp-tiers');
+  list.innerHTML = '';
+  TEAMS.filter((t) => t.unlock.type === 'level')
+    .sort((a, b) => a.unlock.n - b.unlock.n)
+    .forEach((t) => {
+      const unlocked = isUnlocked(t, progress);
+      const li = document.createElement('li');
+      li.className = unlocked ? 'unlocked' : 'locked';
+      const label = document.createElement('span');
+      label.textContent = `${t.emoji} ${t.name} — Lv ${t.unlock.n}`;
+      const status = document.createElement('span');
+      status.className = 'tier-status';
+      status.textContent = unlocked ? '✅ Unlocked' : '🔒 Locked';
+      li.append(label, status);
+      list.appendChild(li);
+    });
+
+  showScreen(bpScreen);
 }
 
 // ---- Render ----
@@ -611,6 +638,9 @@ function midfieldish(kicker) { return kicker === 'home' ? 55 : 45; } // onside r
 el('start-btn').addEventListener('click', startGame);
 el('replay-btn').addEventListener('click', startGame);
 el('back-btn').addEventListener('click', showStart);
+el('bp-open-btn').addEventListener('click', showBattlePass);
+el('bp-back-btn').addEventListener('click', showStart);
+el('bp-badge').addEventListener('click', showBattlePass);
 
 // Populate the start screen (team pickers + battle-pass badge) on load.
 showStart();

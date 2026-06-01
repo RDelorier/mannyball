@@ -45,6 +45,7 @@
         <input type="checkbox" id="voice-toggle" checked />
       </label>
       <button id="start-btn">KICK OFF</button>
+      <button id="bp-open-btn" class="secondary">BATTLE PASS</button>
     </div>
     <p class="controls-hint">
       Home: <kbd>A</kbd> &nbsp; Away: <kbd>L</kbd> &nbsp; Catch/Defend: <kbd>SPACE</kbd>
@@ -91,6 +92,15 @@
       </div>
       <p class="timing-hint">Press your key in the green!</p>
     </div>
+  </section>
+
+  <!-- Battle pass screen -->
+  <section id="bp-screen" class="screen hidden">
+    <h1>Battle Pass</h1>
+    <div id="bp-summary">⭐ Lv 1 — 0 / 250 XP</div>
+    <div class="bp-bar big"><div id="bp-screen-fill"></div></div>
+    <ul id="bp-tiers"></ul>
+    <button id="bp-back-btn">Back</button>
   </section>
 
   <!-- Win screen -->

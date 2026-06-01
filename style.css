@@ -124,3 +124,21 @@ kbd { background: #111; border: 1px solid #555; border-radius: 3px; padding: 1px
 #win-xp { font-size: 1.2rem; color: #ffd700; margin-bottom: 8px; }
 #win-unlock { font-size: 1.2rem; color: #6cff6c; margin-bottom: 18px; }
 .win-buttons { display: flex; gap: 14px; justify-content: center; }
+
+/* Secondary (outline) button, e.g. BATTLE PASS on the start screen. */
+button.secondary { background: #333; color: #ffd700; border: 1px solid #ffd700; }
+button.secondary:hover { background: #444; }
+
+/* Battle-pass screen. */
+#bp-badge { cursor: pointer; }
+#bp-summary { font-size: 1.3rem; color: #ffd700; margin-bottom: 8px; }
+.bp-bar.big { width: min(420px, 90%); height: 12px; margin: 0 auto 20px; }
+#bp-tiers { list-style: none; max-width: 420px; margin: 0 auto 20px; text-align: left; }
+#bp-tiers li {
+  display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  padding: 8px 12px; margin-bottom: 6px; border-radius: 6px; background: #1a1a1a; font-size: 1.1rem;
+}
+#bp-tiers li.unlocked { background: #15411a; }
+#bp-tiers li .tier-status { font-size: 0.95rem; opacity: 0.9; }
+#bp-tiers li.unlocked .tier-status { color: #6cff6c; }
+#bp-tiers li.locked .tier-status { color: #aaa; }
