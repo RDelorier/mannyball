@@ -1,7 +1,7 @@
 import { offenseGoals, newLineToGain, checkWin } from './rules.js';
 import { unlockAudio, playCrowdRoar } from './sound.js';
 import { gradePress } from './timing.js';
-import { aiTimingGrade, callPlay, fourthDownDecision, onsideDecision } from './ai.js';
+import { aiTimingGrade, aiPassDefenseGrade, callPlay, fourthDownDecision, onsideDecision } from './ai.js';
 import { resolveRush } from './rush.js';
 import { nearestDefender, resolvePass } from './pass.js';
 import { applyDownResult, addScore, flipPossession } from './rules.js';
@@ -354,7 +354,7 @@ async function playPass() {
   if (isHuman(defendingTeam())) coachSay(coachLine(COACH.catch), { interrupt: true });
   const defenseGrade = isHuman(defendingTeam())
     ? await runTimingBar(' ', 'Catch it — tap SPACE when the ball arrives!')
-    : aiPress();
+    : aiPassDefenseGrade(config.difficulty, Math.random()); // AI intercepts less often
 
   el('defenders').innerHTML = '';
   return resolvePass({

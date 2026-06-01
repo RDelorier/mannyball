@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { callPlay, fourthDownDecision, aiTimingGrade, onsideDecision } from '../src/ai.js';
+import { callPlay, fourthDownDecision, aiTimingGrade, aiPassDefenseGrade, onsideDecision } from '../src/ai.js';
 
 test('callPlay is 35% rush / 65% pass by roll threshold', () => {
   assert.equal(callPlay(0.0), 'rush');
@@ -25,6 +25,19 @@ test('aiTimingGrade thresholds vary by difficulty', () => {
   assert.equal(aiTimingGrade('hard', 0.0), 'green');
   assert.equal(aiTimingGrade('easy', 0.5), 'yellow');
   assert.equal(aiTimingGrade('easy', 0.9), 'red');
+});
+
+test('aiPassDefenseGrade intercepts far less often than offense timing', () => {
+  // medium: green only below 0.22 (vs 0.6 for offense timing)
+  assert.equal(aiPassDefenseGrade('medium', 0.2), 'green');
+  assert.equal(aiPassDefenseGrade('medium', 0.3), 'yellow');
+  assert.equal(aiPassDefenseGrade('medium', 0.8), 'red');
+  // a roll that would intercept on offense timing does NOT here
+  assert.equal(aiTimingGrade('medium', 0.5), 'green');
+  assert.equal(aiPassDefenseGrade('medium', 0.5), 'yellow');
+  // hard picks more than easy, but both well under offense rates
+  assert.equal(aiPassDefenseGrade('hard', 0.3), 'green');
+  assert.equal(aiPassDefenseGrade('easy', 0.3), 'yellow');
 });
 
 test('onsideDecision only when trailing and within probability', () => {
