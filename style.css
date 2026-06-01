@@ -40,11 +40,13 @@ kbd { background: #111; border: 1px solid #555; border-radius: 3px; padding: 1px
 #game-status { font-size: 1.1rem; opacity: 0.9; }
 #target-line { text-align: center; font-size: 0.95rem; opacity: 0.75; margin-bottom: 10px; }
 
+#game-screen { width: min(1200px, 98vw); }
+
 #field {
-  display: flex; height: 140px; border: 3px solid #fff; border-radius: 4px; overflow: hidden;
+  display: flex; height: 240px; border: 3px solid #fff; border-radius: 4px; overflow: hidden;
 }
 .endzone {
-  width: 60px; display: flex; align-items: center; justify-content: center;
+  width: 84px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
   writing-mode: vertical-rl; text-orientation: upright; font-weight: bold; letter-spacing: 2px;
 }
 .home-zone { background: #1a4f8a; }
@@ -58,7 +60,7 @@ kbd { background: #111; border: 1px solid #555; border-radius: 3px; padding: 1px
 }
 #ball {
   position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%); font-size: 1.6rem;
+  transform: translate(-50%, -50%); font-size: 2.6rem;
   transition: left 0.4s ease;
 }
 #firstdown-line {
@@ -66,7 +68,7 @@ kbd { background: #111; border: 1px solid #555; border-radius: 3px; padding: 1px
 }
 #defenders .defender {
   position: absolute; top: 50%; transform: translate(-50%, -50%);
-  font-size: 1.3rem;
+  font-size: 2rem;
 }
 #defenders .defender.nearest { transform: translate(-50%, -50%) scale(1.4); filter: drop-shadow(0 0 4px #ffd700); }
 
