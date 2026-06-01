@@ -16,7 +16,7 @@
   --line: rgba(57, 255, 20, 0.28);
   --display: 'Press Start 2P', 'Courier New', monospace;
   --body: 'Saira', system-ui, sans-serif;
-  --tilt: 32deg;          /* pseudo-3D field rake */
+  --tilt: 24deg;          /* pseudo-3D field rake */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -175,13 +175,14 @@ kbd {
   background: #03100a; border: 2px solid var(--line); border-radius: 10px;
   padding: 12px 20px; margin-bottom: 14px;
   box-shadow: 0 0 26px rgba(57, 255, 20, 0.12), inset 0 0 34px rgba(0, 0, 0, 0.65);
+  position: relative; z-index: 5;
 }
 .team { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 1px; }
 .team b { font-family: var(--display); font-size: 1.5rem; }
 .team.home b { color: var(--home); text-shadow: 0 0 12px rgba(56, 198, 255, 0.7); }
 .team.away b { color: var(--away); text-shadow: 0 0 12px rgba(255, 77, 109, 0.7); }
 #game-status { font-family: var(--display); font-size: 0.78rem; color: var(--green); text-shadow: 0 0 8px rgba(57, 255, 20, 0.5); text-align: center; }
-#target-line { font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 14px; }
+#target-line { font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 14px; position: relative; z-index: 5; }
 
 /* ---- Field ---- */
 #field {
@@ -189,8 +190,9 @@ kbd {
   border: 2px solid var(--green); border-radius: 8px;
   box-shadow: 0 0 36px rgba(57, 255, 20, 0.28), inset 0 0 50px rgba(0, 0, 0, 0.55);
   transform: rotateX(var(--tilt));
-  transform-origin: center 62%;
+  transform-origin: center center;
   transform-style: preserve-3d;
+  margin: 6px 0;
 }
 .endzone {
   width: 84px; display: flex; align-items: center; justify-content: center;
@@ -247,9 +249,11 @@ kbd {
   font-family: var(--display); font-size: 0.95rem; line-height: 1.5;
   min-height: 34px; margin: 16px 0; color: var(--amber);
   text-shadow: 0 0 10px rgba(255, 210, 63, 0.5);
+  position: relative; z-index: 5;
 }
 
-#playcall, #kickoff-choice { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+#playcall, #kickoff-choice { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 10px 0; position: relative; z-index: 5; }
+#timing-bar { position: relative; z-index: 5; }
 
 /* ---- Timing bar (arcade power meter) ---- */
 #timing-bar { margin-top: 10px; }
