@@ -145,6 +145,7 @@ kbd {
   width: 100vw; max-width: none; height: 100vh; padding: 10px 16px;
   display: flex; flex-direction: column; gap: 8px; justify-content: flex-start;
   perspective: 1100px; perspective-origin: 50% 40%;
+  touch-action: manipulation; -webkit-user-select: none; user-select: none;
 }
 #game-screen #message { margin: 24px 0 8px; }
 

@@ -14,6 +14,9 @@ import {
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 import { CONDITIONS, conditionById } from './conditions.js';
 
+// Tap/click events used to register a timing press (covers iPad Safari quirks).
+const TAP_EVENTS = ['pointerdown', 'touchstart', 'mousedown'];
+
 // Each timing bar gets a fresh randomized sweet spot (see randomSweet).
 
 // Timing-bar sweep speed (percent/frame) by difficulty — EXTREME is frantic.
@@ -349,7 +352,7 @@ function runTimingBar(key, hint) {
     function finish(grade) {
       cancelAnimationFrame(rafId);
       window.removeEventListener('keydown', onKey);
-      gameScreen.removeEventListener('pointerdown', onTap);
+      TAP_EVENTS.forEach((ev) => gameScreen.removeEventListener(ev, onTap));
       marker.classList.add(grade);               // green | yellow | red
       if (grade === 'red') track.classList.add('miss'); // dark-red flash on a really bad press
       setTimeout(() => {
@@ -366,9 +369,12 @@ function runTimingBar(key, hint) {
       finish(gradePress(pos, sweet));
     }
 
-    // Touch / mouse: tapping the bar registers the press (mobile-friendly).
+    // Touch / mouse: tapping anywhere registers the press (mobile-friendly).
+    let tapped = false;
     function onTap(e) {
-      e.preventDefault();
+      if (tapped) return;       // guard against pointer+touch+mouse all firing
+      tapped = true;
+      if (e.cancelable) e.preventDefault();
       finish(gradePress(pos, sweet));
     }
 
@@ -382,7 +388,7 @@ function runTimingBar(key, hint) {
     }
 
     window.addEventListener('keydown', onKey);
-    gameScreen.addEventListener('pointerdown', onTap);
+    TAP_EVENTS.forEach((ev) => gameScreen.addEventListener(ev, onTap, { passive: false }));
     rafId = requestAnimationFrame(frame);
   });
 }
