@@ -382,8 +382,30 @@ body.extreme #game-status { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 59, 
 #win-unlock { font-size: 1.2rem; font-weight: 700; color: var(--green); text-shadow: 0 0 10px rgba(57, 255, 20, 0.5); margin-bottom: 22px; }
 .win-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
-/* Mobile: the badge would overlap the wrapped title, so flow it above instead. */
+/* ---- Mobile-friendly tweaks ---- */
 @media (max-width: 600px) {
+  /* Badge would overlap the wrapped title — flow it above instead. */
   #bp-badge { position: static; display: inline-block; margin: 0 auto 16px; }
   h1 { font-size: clamp(1.2rem, 7vw, 2rem); }
+
+  .screen { padding: 16px 12px; }
+  .menu { min-width: min(420px, 94vw); font-size: 0.95rem; }
+  .menu label { gap: 10px; }
+  .menu select { min-width: 0; max-width: 60vw; }
+
+  #game-screen { padding: 8px; }
+  #scoreboard { padding: 8px 10px; }
+  .team b { font-size: 1.1rem; }
+  #game-status { font-size: 0.58rem; }
+  .endzone { width: 60px; font-size: 0.5rem; gap: 6px; }
+  .endzone .logo { font-size: 1.8rem; }
+
+  /* Shrink the arc gauge so it never overflows narrow screens. */
+  #timing-bar { transform: scale(0.82); transform-origin: top center; }
+  .timing-hint { font-size: 0.8rem; }
+
+  button { font-size: 0.7rem; padding: 12px 14px; }
+  #win-result { font-size: 0.85rem; }
+  #bp-tiers li { font-size: 0.9rem; }
+  #bp-tiers li .tier-lvl { min-width: 48px; }
 }

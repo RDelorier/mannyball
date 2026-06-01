@@ -325,7 +325,7 @@ function runTimingBar(key, hint) {
   const marker = bar.querySelector('.bar-marker');
   const zone = bar.querySelector('.sweet-zone');
   const track = bar.querySelector('.bar-track');
-  bar.querySelector('.timing-hint').textContent = hint;
+  bar.querySelector('.timing-hint').textContent = hint + ' (or tap)';
 
   // Randomize the sweet spot's position and size for this press, drawn as a
   // green wedge on the arc (0..100 maps to 0..180deg of the semicircle).
@@ -349,6 +349,7 @@ function runTimingBar(key, hint) {
     function finish(grade) {
       cancelAnimationFrame(rafId);
       window.removeEventListener('keydown', onKey);
+      gameScreen.removeEventListener('pointerdown', onTap);
       marker.classList.add(grade);               // green | yellow | red
       if (grade === 'red') track.classList.add('miss'); // dark-red flash on a really bad press
       setTimeout(() => {
@@ -365,6 +366,12 @@ function runTimingBar(key, hint) {
       finish(gradePress(pos, sweet));
     }
 
+    // Touch / mouse: tapping the bar registers the press (mobile-friendly).
+    function onTap(e) {
+      e.preventDefault();
+      finish(gradePress(pos, sweet));
+    }
+
     function frame(ts) {
       if (start === null) start = ts;
       const t = (ts - start) / 1000;
@@ -375,6 +382,7 @@ function runTimingBar(key, hint) {
     }
 
     window.addEventListener('keydown', onKey);
+    gameScreen.addEventListener('pointerdown', onTap);
     rafId = requestAnimationFrame(frame);
   });
 }
