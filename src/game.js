@@ -52,6 +52,9 @@ const COACH = {
   intercepted: ['Picked off!', 'Turnover! Defense wins it!', 'He took it away!'],
   turnover: ['Turnover on downs!', 'Defense holds!'],
   overthrow: ['Ohh, into the crowd!', 'Way over his head!', 'Nobody was there!'],
+  evade: ['Beat the rush!', 'Step up in the pocket!', 'Get it off!'],
+  sack: ['Sacked!', 'They got to him!', 'Down he goes for a loss!'],
+  safety: ['Safety! Two points!', 'Tackled in the end zone!', 'That\'s a safety!'],
   fgGood: ["It's good!", 'Right through the uprights!'],
   fgNoGood: ['No good!', 'He missed it!'],
   punt: ['Boot it away!', 'Flip the field!'],
@@ -325,11 +328,41 @@ async function playRush() {
   });
 }
 
+// Render pass rushers charging the QB.
+function renderRushers(yards) {
+  const wrap = el('defenders');
+  wrap.innerHTML = '';
+  for (const y of yards) {
+    const div = document.createElement('div');
+    div.className = 'defender rusher';
+    div.textContent = '😤';
+    div.style.left = yardToPercent(y);
+    wrap.appendChild(div);
+  }
+}
+
 async function playPass() {
   const off = state.possession;
-  setMessage('PASS!');
+  setMessage('PASS RUSH!');
+
+  // 0) Pass rush — the offense must beat the rush or get sacked (a sack in your
+  //    own end zone is a safety).
+  const rushers = [state.ballOn + state.direction * 3, state.ballOn + state.direction * 5];
+  renderRushers(rushers);
+  if (isHuman(off)) coachSay(coachLine(COACH.evade), { interrupt: true });
+  const rushGrade = isHuman(off)
+    ? await runTimingBar(teamKey(off), 'Beat the rush — hit your key in the green!')
+    : aiPress();
+  el('defenders').innerHTML = '';
+  if (rushGrade === 'red') {
+    return resolvePass({
+      startYard: state.ballOn, targetYard: state.ballOn,
+      goalLine: state.goalLine, ownGoal: state.ownGoal, direction: state.direction, rushGrade,
+    });
+  }
 
   // 1) Offense throws (timing). A really bad (red) throw sails into the crowd.
+  setMessage('PASS!');
   if (isHuman(off)) coachSay(coachLine(COACH.throw), { interrupt: true });
   const throwGrade = isHuman(off)
     ? await runTimingBar(teamKey(off), 'Throw it — hit your key in the green!')
@@ -339,7 +372,7 @@ async function playPass() {
     await overthrow();
     return resolvePass({
       startYard: state.ballOn, targetYard: state.ballOn,
-      goalLine: state.goalLine, direction: state.direction, throwGrade,
+      goalLine: state.goalLine, ownGoal: state.ownGoal, direction: state.direction, rushGrade, throwGrade,
     });
   }
 
@@ -359,7 +392,8 @@ async function playPass() {
   el('defenders').innerHTML = '';
   return resolvePass({
     startYard: state.ballOn, targetYard: clampedTarget,
-    goalLine: state.goalLine, direction: state.direction, throwGrade, defenseGrade,
+    goalLine: state.goalLine, ownGoal: state.ownGoal, direction: state.direction,
+    rushGrade, throwGrade, defenseGrade,
   });
 }
 
@@ -378,6 +412,8 @@ async function runDown() {
   // 'goforit' means run a normal play on 4th down; AI picks rush/pass.
   const play = (choice === 'rush' || choice === 'pass') ? choice : callPlay(Math.random());
   result = play === 'rush' ? await playRush() : await playPass();
+
+  if (result.outcome === 'safety') { await handleSafety(); return; }
 
   const spot = state.ballOn; // snapshot before applying, for the yardage message
   const { state: next, events } = applyDownResult(state, result);
@@ -423,6 +459,8 @@ async function announce(events, result, spot) {
     setMessage('First down!'); coachSay(coachLine(COACH.firstDown), { interrupt: true });
   } else if (result && result.outcome === 'overthrown') {
     setMessage('Overthrown into the crowd!'); coachSay(coachLine(COACH.overthrow), { interrupt: true });
+  } else if (result && result.outcome === 'sack') {
+    setMessage('SACKED! Loss of yards.'); coachSay(coachLine(COACH.sack), { interrupt: true });
   } else if (result && result.outcome === 'incomplete') {
     setMessage('Incomplete.');
   } else {
@@ -470,6 +508,23 @@ async function runKick(kind) {
 }
 
 function scheduleNext() { setTimeout(runDown, 500); }
+
+// Safety: the defense scores 2; the conceding team then free-kicks, so the
+// scoring team takes over near its own 35.
+async function handleSafety() {
+  const scoringTeam = defendingTeam(); // the defense gets the points
+  state = addScore(state, scoringTeam, 2);
+  render();
+  setMessage('SAFETY! +2 to the defense');
+  playCrowdRoar();
+  coachSay(coachLine(COACH.safety), { interrupt: true });
+  await wait(1100);
+  const winner = checkWin(state, config.target);
+  if (winner) return endGame(winner);
+  setPossession(scoringTeam, scoringTeam === 'home' ? 35 : 65);
+  render();
+  scheduleNext();
+}
 
 async function runPat() {
   const kicker = state.possession;

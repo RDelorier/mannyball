@@ -39,3 +39,25 @@ test('a good throw still resolves on the defense grade', () => {
   const r = resolvePass({ startYard: 50, targetYard: 75, goalLine: 100, direction: 1, throwGrade: 'green', defenseGrade: 'red' });
   assert.equal(r.outcome, 'completion');
 });
+
+test('a blown block (red rush) is a sack for a 7-yard loss', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 70, goalLine: 100, ownGoal: 0, direction: 1, rushGrade: 'red' });
+  assert.deepEqual(r, { outcome: 'sack', endYard: 43, touchdown: false, turnover: false });
+});
+
+test('a sack in your own end zone is a safety', () => {
+  const r = resolvePass({ startYard: 5, targetYard: 25, goalLine: 100, ownGoal: 0, direction: 1, rushGrade: 'red' });
+  assert.equal(r.outcome, 'safety');
+  assert.equal(r.safety, true);
+  assert.equal(r.endYard, 0);
+});
+
+test('away-direction sack moves the ball the other way', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 30, goalLine: 0, ownGoal: 100, direction: -1, rushGrade: 'red' });
+  assert.deepEqual(r, { outcome: 'sack', endYard: 57, touchdown: false, turnover: false });
+});
+
+test('beating the rush proceeds to the throw/defense', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 70, goalLine: 100, ownGoal: 0, direction: 1, rushGrade: 'green', throwGrade: 'green', defenseGrade: 'red' });
+  assert.equal(r.outcome, 'completion');
+});

@@ -11,12 +11,22 @@ export function nearestDefender(receiverYard, defenders) {
 }
 
 // Resolve a pass.
+//   rushGrade 'red'   -> the pass rush gets home = SACK for a 7-yard loss; a sack
+//                        at/behind the offense's own goal line is a SAFETY.
 //   throwGrade 'red'  -> overthrown into the crowd (incomplete, no defense involved)
 // Otherwise the nearest defender's grade decides:
 //   green  -> interception (turnover at the target)
 //   yellow -> knockdown (incomplete, ball returns to the line of scrimmage)
 //   red    -> completion at the target (touchdown if it reaches the goal line)
-export function resolvePass({ startYard, targetYard, goalLine, direction, throwGrade, defenseGrade }) {
+export function resolvePass({ startYard, targetYard, goalLine, ownGoal, direction, rushGrade, throwGrade, defenseGrade }) {
+  if (rushGrade === 'red') {
+    const sackYard = startYard - direction * 7;
+    const behindOwnGoal = direction > 0 ? sackYard <= ownGoal : sackYard >= ownGoal;
+    if (behindOwnGoal) {
+      return { outcome: 'safety', endYard: ownGoal, touchdown: false, turnover: false, safety: true };
+    }
+    return { outcome: 'sack', endYard: sackYard, touchdown: false, turnover: false };
+  }
   if (throwGrade === 'red') {
     return { outcome: 'overthrown', endYard: startYard, touchdown: false, turnover: false };
   }
