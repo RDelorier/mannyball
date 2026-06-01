@@ -146,7 +146,7 @@ kbd {
   display: flex; flex-direction: column; gap: 8px; justify-content: flex-start;
   perspective: 1100px; perspective-origin: 50% 40%;
 }
-#game-screen #message { margin: 8px 0; }
+#game-screen #message { margin: 24px 0 8px; }
 
 /* Field themes (battle-pass rewards). Default is the green gridiron above. */
 #field.theme-night #gridiron {
