@@ -1,16 +1,18 @@
 import { offenseGoals, newLineToGain, checkWin } from './rules.js';
 import { unlockAudio, playCrowdRoar } from './sound.js';
 import { gradePress } from './timing.js';
-import { aiTimingGrade } from './ai.js';
+import { aiTimingGrade, callPlay, fourthDownDecision, onsideDecision } from './ai.js';
 import { resolveRush } from './rush.js';
 import { nearestDefender, resolvePass } from './pass.js';
-import { applyDownResult } from './rules.js';
-import { callPlay } from './ai.js';
+import { applyDownResult, addScore, flipPossession } from './rules.js';
 import { resolveFieldGoal, resolvePunt, resolvePat, resolveOnside } from './kick.js';
-import { addScore, flipPossession } from './rules.js';
-import { fourthDownDecision, onsideDecision } from './ai.js';
+import {
+  TEAMS, teamById, isUnlocked, unlockLabel, bpProgress,
+  updateStats, newlyUnlocked, levelForXp, xpForGame,
+} from './teams.js';
+import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 
-const SWEET = { center: 50, green: 9, yellow: 20 }; // percent-based sweet spot
+const SWEET = { center: 50, green: 5, yellow: 20 }; // tight green window
 
 // ---- DOM ----
 const el = (id) => document.getElementById(id);
@@ -18,9 +20,68 @@ const startScreen = el('start-screen');
 const gameScreen = el('game-screen');
 const winScreen = el('win-screen');
 
+// ---- Persistent progress (localStorage) ----
+const SAVE_KEY = '1dfb-progress';
+function loadProgress() {
+  try {
+    return { wins: 0, hardWins: 0, highScore: 0, xp: 0, ...JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') };
+  } catch {
+    return { wins: 0, hardWins: 0, highScore: 0, xp: 0 };
+  }
+}
+function saveProgress(p) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(p)); } catch { /* storage unavailable */ }
+}
+let progress = loadProgress();
+
 // ---- Config + state ----
-let config = { mode: 'ai', difficulty: 'medium', target: 21 };
+let config = {
+  mode: 'ai', difficulty: 'medium', target: 21,
+  homeTeam: 'eagles', awayTeam: 'bears', humanSide: 'home', voice: true,
+};
 let state = null;
+
+// ---- Coach phrase pools ----
+const COACH = {
+  throw: ['Hit the green!', 'Lead your receiver!', 'Nice and easy now!'],
+  catch: ['Pick it off!', 'Break it up!', 'Eyes on the ball!'],
+  rush: ['Find the hole!', 'Hit it hard!', 'Break that tackle!'],
+  kick: ['Line it up!', 'Drill it through!', 'Stay smooth!'],
+  td: ['Touchdown! Way to go!', 'Six points, baby!', 'In the end zone!'],
+  firstDown: ["First down, keep movin'!", 'Move those chains!', 'Fresh set of downs!'],
+  intercepted: ['Picked off!', 'Turnover! Defense wins it!', 'He took it away!'],
+  turnover: ['Turnover on downs!', 'Defense holds!'],
+  overthrow: ['Ohh, into the crowd!', 'Way over his head!', 'Nobody was there!'],
+  fgGood: ["It's good!", 'Right through the uprights!'],
+  fgNoGood: ['No good!', 'He missed it!'],
+  punt: ['Boot it away!', 'Flip the field!'],
+  win: ["That's the ballgame! Well done!", 'Great win out there!'],
+  lose: ["Tough one. We'll get 'em next time.", 'Keep your head up.'],
+};
+
+// ---- Helpers ----
+function yardToPercent(yard) {
+  return Math.max(0, Math.min(100, yard)) + '%';
+}
+function ordinal(n) {
+  return ['1st', '2nd', '3rd', '4th'][n - 1] || `${n}th`;
+}
+function distanceToGain() {
+  return Math.abs(state.lineToGain - state.ballOn);
+}
+function showScreen(screen) {
+  for (const s of [startScreen, gameScreen, winScreen]) s.classList.add('hidden');
+  screen.classList.remove('hidden');
+}
+function setMessage(text) {
+  el('message').textContent = text;
+}
+function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+// The team object controlling a given side.
+function teamFor(side) {
+  return teamById(side === 'home' ? config.homeTeam : config.awayTeam);
+}
 
 function freshState() {
   const goals = offenseGoals('home');
@@ -32,30 +93,40 @@ function freshState() {
   };
 }
 
-// ---- Helpers ----
-function yardToPercent(yard) {
-  return Math.max(0, Math.min(100, yard)) + '%';
+// ---- Start screen ----
+function populateTeamSelect(select, selectedId) {
+  select.innerHTML = '';
+  for (const t of TEAMS) {
+    const unlocked = isUnlocked(t, progress);
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = unlocked ? `${t.emoji} ${t.name}` : `🔒 ${t.name} — ${unlockLabel(t)}`;
+    opt.disabled = !unlocked;
+    if (t.id === selectedId && unlocked) opt.selected = true;
+    select.appendChild(opt);
+  }
 }
 
-function ordinal(n) {
-  return ['1st', '2nd', '3rd', '4th'][n - 1] || `${n}th`;
+function renderBadge() {
+  const { level, into, needed } = bpProgress(progress.xp);
+  el('bp-level').textContent = `⭐ Lv ${level}`;
+  el('bp-fill').style.width = (100 * into / needed) + '%';
 }
 
-function distanceToGain() {
-  return Math.abs(state.lineToGain - state.ballOn);
-}
-
-function showScreen(screen) {
-  for (const s of [startScreen, gameScreen, winScreen]) s.classList.add('hidden');
-  screen.classList.remove('hidden');
-}
-
-function setMessage(text) {
-  el('message').textContent = text;
+function showStart() {
+  renderBadge();
+  populateTeamSelect(el('home-team'), config.homeTeam);
+  populateTeamSelect(el('away-team'), config.awayTeam);
+  showScreen(startScreen);
 }
 
 // ---- Render ----
 function render() {
+  const home = teamFor('home'), away = teamFor('away');
+  el('label-home').textContent = `${home.emoji} ${home.name.toUpperCase()}`;
+  el('label-away').textContent = `${away.emoji} ${away.name.toUpperCase()}`;
+  el('endzone-home').textContent = `${home.emoji} ${home.name}`;
+  el('endzone-away').textContent = `${away.emoji} ${away.name}`;
   el('score-home').textContent = state.scoreHome;
   el('score-away').textContent = state.scoreAway;
   el('target-line').textContent = `First to ${config.target}`;
@@ -63,7 +134,7 @@ function render() {
   const dist = distanceToGain();
   const distLabel = dist >= toGoal ? 'Goal' : dist;
   el('game-status').textContent =
-    `${state.possession.toUpperCase()} ball · ${ordinal(state.down)} & ${distLabel}`;
+    `${teamFor(state.possession).name.toUpperCase()} ball · ${ordinal(state.down)} & ${distLabel}`;
   el('ball').style.left = yardToPercent(state.ballOn);
   el('firstdown-line').style.left = yardToPercent(state.lineToGain);
 }
@@ -73,47 +144,101 @@ function startGame() {
   config.mode = el('mode-select').value;
   config.difficulty = el('difficulty-select').value;
   config.target = Number(el('target-select').value);
+  config.homeTeam = el('home-team').value || 'eagles';
+  config.awayTeam = el('away-team').value || 'bears';
+  config.voice = el('voice-toggle').checked;
+  setCoachEnabled(config.voice);
   unlockAudio();
+  initVoice();
+
+  // 1P: 50/50 which side you control. 2P: both sides human.
+  config.humanSide = Math.random() < 0.5 ? 'home' : 'away';
+
   state = freshState();
+  setPossession('home', 25);
   showScreen(gameScreen);
   render();
-  setMessage('');
-  // Opening possession: home receives at its own 25.
-  setPossession('home', 25);
-  render();
-  runDown();
+
+  if (config.mode === 'ai') {
+    const t = teamFor(config.humanSide);
+    setMessage(`You're the ${t.emoji} ${t.name.toUpperCase()} (${config.humanSide})!`);
+    coachSay(`You're on the ${t.name}. Let's win this!`, { interrupt: true });
+  } else {
+    setMessage('Two-player kickoff!');
+    coachSay("Let's play some football!", { interrupt: true });
+  }
+  setTimeout(runDown, 1600); // let the side announcement read
 }
 
 function endGame(winner) {
-  el('win-text').textContent = `${winner.toUpperCase()} WINS!`;
+  const humanWon = config.mode === '2p' ? true : winner === config.humanSide;
+  const winnerScore = winner === 'home' ? state.scoreHome : state.scoreAway;
+  const before = progress;
+  const after = updateStats(before, {
+    won: humanWon,
+    hard: config.mode === 'ai' && config.difficulty === 'hard',
+    score: winnerScore,
+  });
+  const gained = xpForGame({ won: humanWon, score: humanWon ? winnerScore : 0 });
+  const unlocked = newlyUnlocked(before, after);
+  const leveledUp = levelForXp(after.xp) > levelForXp(before.xp);
+  progress = after;
+  saveProgress(progress);
+
+  const wTeam = teamFor(winner);
+  const home = teamFor('home'), away = teamFor('away');
+  el('win-heading').textContent = humanWon ? 'Well Done!' : 'Game Over';
+  el('win-result').textContent =
+    `${wTeam.emoji} ${wTeam.name} win — ${home.name} ${state.scoreHome} – ${state.scoreAway} ${away.name}`;
+  let xpText = `+${gained} XP`;
+  if (leveledUp) xpText += ` — Level up! → Lv ${levelForXp(after.xp)}`;
+  el('win-xp').textContent = xpText;
+  const unlockEl = el('win-unlock');
+  if (unlocked.length) {
+    unlockEl.textContent = '🔓 Unlocked: ' + unlocked.map((id) => {
+      const t = teamById(id); return `${t.emoji} ${t.name}`;
+    }).join(', ') + '!';
+    unlockEl.classList.remove('hidden');
+  } else {
+    unlockEl.classList.add('hidden');
+  }
+
+  coachSay(coachLine(humanWon ? COACH.win : COACH.lose), { interrupt: true });
   showScreen(winScreen);
 }
 
-// Run an animated timing bar. Resolves with 'green' | 'yellow' | 'red'.
-// `key` is the keyboard key that triggers the press (e.g. 'a', 'l', ' ').
+// ---- Timing-bar input engine ----
+// Resolves with 'green' | 'yellow' | 'red'. `key` triggers the press ('a','l',' ').
 function runTimingBar(key, hint) {
   const bar = el('timing-bar');
   const marker = bar.querySelector('.bar-marker');
   const zone = bar.querySelector('.sweet-zone');
+  const track = bar.querySelector('.bar-track');
   bar.querySelector('.timing-hint').textContent = hint;
 
-  // Position the green zone from the SWEET config (percent across the track).
+  // Visible green band matches the actual green grade window.
   zone.style.left = (SWEET.center - SWEET.green) + '%';
   zone.style.width = (SWEET.green * 2) + '%';
 
+  marker.classList.remove('green', 'yellow', 'red');
+  track.classList.remove('miss');
   bar.classList.remove('hidden');
 
   return new Promise((resolve) => {
-    let pos = 0;
-    let dir = 1;
-    let rafId = 0;
+    let pos = 0, dir = 1, rafId = 0;
     const speed = 1.4; // percent per frame
 
     function finish(grade) {
       cancelAnimationFrame(rafId);
-      bar.classList.add('hidden');
       window.removeEventListener('keydown', onKey);
-      resolve(grade);
+      marker.classList.add(grade);               // green | yellow | red
+      if (grade === 'red') track.classList.add('miss'); // dark-red flash on a really bad press
+      setTimeout(() => {
+        bar.classList.add('hidden');
+        marker.classList.remove('green', 'yellow', 'red');
+        track.classList.remove('miss');
+        resolve(grade);
+      }, 260);
     }
 
     function onKey(e) {
@@ -142,17 +267,15 @@ function aiPress() {
 
 // ---- Play loop ----
 
-// Which side does a human control? In AI mode only 'home' is human.
+// Which side does a human control? In AI mode only the rolled human side.
 function isHuman(team) {
-  return config.mode === '2p' || team === 'home';
+  return config.mode === '2p' || team === config.humanSide;
 }
 
-// Keyboard key a team uses for its timing presses.
 function teamKey(team) {
   return team === 'home' ? 'a' : 'l';
 }
 
-// The key the offense uses for its own timing presses.
 function offenseKey() {
   return teamKey(state.possession);
 }
@@ -169,7 +292,7 @@ function rushDefenders() {
     .filter((y) => (d > 0 ? y < state.goalLine : y > state.goalLine));
 }
 
-// Render defender markers on the field.
+// Render defender markers; highlightIndex marks the controlled (nearest) one.
 function renderDefenders(yards, highlightIndex = -1) {
   const wrap = el('defenders');
   wrap.innerHTML = '';
@@ -186,6 +309,7 @@ async function playRush() {
   const defenders = rushDefenders();
   renderDefenders(defenders);
   setMessage('RUSH!');
+  if (isHuman(state.possession)) coachSay(coachLine(COACH.rush), { interrupt: true });
   const grades = [];
   for (let i = 0; i < defenders.length; i++) {
     const grade = isHuman(state.possession)
@@ -202,17 +326,32 @@ async function playRush() {
 }
 
 async function playPass() {
-  // Receiver is downfield; defenders cover nearby yard lines.
+  const off = state.possession;
+  setMessage('PASS!');
+
+  // 1) Offense throws (timing). A really bad (red) throw sails into the crowd.
+  if (isHuman(off)) coachSay(coachLine(COACH.throw), { interrupt: true });
+  const throwGrade = isHuman(off)
+    ? await runTimingBar(teamKey(off), 'Throw it — hit your key in the green!')
+    : aiPress();
+
+  if (throwGrade === 'red') {
+    await overthrow();
+    return resolvePass({
+      startYard: state.ballOn, targetYard: state.ballOn,
+      goalLine: state.goalLine, direction: state.direction, throwGrade,
+    });
+  }
+
+  // 2) Ball flies to the receiver; the nearest defender contests via SPACE.
   const target = state.ballOn + state.direction * 18;
   const clampedTarget = state.direction > 0
     ? Math.min(target, state.goalLine) : Math.max(target, state.goalLine);
   const defenders = [clampedTarget - state.direction * 4, clampedTarget + state.direction * 6];
-  // The defender nearest the receiver is the one the defending side controls.
   const nearIdx = nearestDefender(clampedTarget, defenders);
   renderDefenders([clampedTarget, ...defenders], nearIdx + 1); // +1: index 0 is the receiver
-  setMessage('PASS!');
 
-  // The DEFENDING side contests with that nearest defender, always via SPACE.
+  if (isHuman(defendingTeam())) coachSay(coachLine(COACH.catch), { interrupt: true });
   const defenseGrade = isHuman(defendingTeam())
     ? await runTimingBar(' ', 'Catch it — tap SPACE when the ball arrives!')
     : aiPress();
@@ -220,8 +359,15 @@ async function playPass() {
   el('defenders').innerHTML = '';
   return resolvePass({
     startYard: state.ballOn, targetYard: clampedTarget,
-    goalLine: state.goalLine, direction: state.direction, defenseGrade,
+    goalLine: state.goalLine, direction: state.direction, throwGrade, defenseGrade,
   });
+}
+
+// Ball sails up into the crowd.
+function overthrow() {
+  const ball = el('ball');
+  ball.classList.add('overthrow');
+  return wait(1000).then(() => ball.classList.remove('overthrow'));
 }
 
 async function runDown() {
@@ -267,20 +413,28 @@ function choosePlay(fourth) {
 }
 
 async function announce(events, result, spot) {
-  if (events.includes('touchdown')) { setMessage('TOUCHDOWN! 🏈'); playCrowdRoar(); }
-  else if (events.includes('turnover')) setMessage('INTERCEPTED!');
-  else if (events.includes('turnoverOnDowns')) setMessage('Turnover on downs!');
-  else if (events.includes('firstDown')) setMessage('First down!');
-  else if (result && result.outcome === 'incomplete') setMessage('Incomplete.');
-  else setMessage(`Gain of ${Math.abs(result.endYard - spot)} yds`);
+  if (events.includes('touchdown')) {
+    setMessage('TOUCHDOWN! 🏈'); playCrowdRoar(); coachSay(coachLine(COACH.td), { interrupt: true });
+  } else if (events.includes('turnover')) {
+    setMessage('INTERCEPTED!'); coachSay(coachLine(COACH.intercepted), { interrupt: true });
+  } else if (events.includes('turnoverOnDowns')) {
+    setMessage('Turnover on downs!'); coachSay(coachLine(COACH.turnover), { interrupt: true });
+  } else if (events.includes('firstDown')) {
+    setMessage('First down!'); coachSay(coachLine(COACH.firstDown), { interrupt: true });
+  } else if (result && result.outcome === 'overthrown') {
+    setMessage('Overthrown into the crowd!'); coachSay(coachLine(COACH.overthrow), { interrupt: true });
+  } else if (result && result.outcome === 'incomplete') {
+    setMessage('Incomplete.');
+  } else {
+    setMessage(`Gain of ${Math.abs(result.endYard - spot)} yds`);
+  }
   await wait(900);
 }
-
-function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function runKick(kind) {
   const kicker = state.possession;
   const key = teamKey(kicker);
+  if (isHuman(kicker)) coachSay(coachLine(COACH.kick), { interrupt: true });
   const grade = isHuman(kicker)
     ? await runTimingBar(key, kind === 'fieldgoal' ? 'Kick it through — hit the green!' : 'Punt — power up in the green!')
     : aiPress();
@@ -291,12 +445,14 @@ async function runKick(kind) {
       state = addScore(state, kicker, 3);
       render();
       setMessage('Field goal is GOOD! (+3)');
+      coachSay(coachLine(COACH.fgGood), { interrupt: true });
       await wait(900);
       const winner = checkWin(state, config.target);
       if (winner) return endGame(winner);
       return startKickoff(kicker);
     }
     setMessage('Field goal is NO GOOD.');
+    coachSay(coachLine(COACH.fgNoGood), { interrupt: true });
     await wait(900);
     state = flipPossession(state, state.ballOn);
     render();
@@ -306,6 +462,7 @@ async function runKick(kind) {
   // punt
   const { newBallOn } = resolvePunt({ ballOn: state.ballOn, direction: state.direction, powerGrade: grade });
   setMessage('Punt away!');
+  coachSay(coachLine(COACH.punt), { interrupt: true });
   await wait(700);
   state = flipPossession(state, newBallOn);
   render();
@@ -318,6 +475,7 @@ async function runPat() {
   const kicker = state.possession;
   const key = teamKey(kicker);
   setMessage('Extra point attempt…');
+  if (isHuman(kicker)) coachSay(coachLine(COACH.kick), { interrupt: true });
   const grade = isHuman(kicker)
     ? await runTimingBar(key, 'Extra point — hit the green!')
     : aiPress();
@@ -396,7 +554,11 @@ function midfieldish(kicker) { return kicker === 'home' ? 55 : 45; } // onside r
 
 // ---- Wiring ----
 el('start-btn').addEventListener('click', startGame);
-el('replay-btn').addEventListener('click', () => showScreen(startScreen));
+el('replay-btn').addEventListener('click', startGame);
+el('back-btn').addEventListener('click', showStart);
 
-// Exposed for later tasks / manual testing in the console.
-window.__game = { get state() { return state; }, render, endGame, checkWin: () => checkWin(state, config.target) };
+// Populate the start screen (team pickers + battle-pass badge) on load.
+showStart();
+
+// Exposed for manual testing in the console.
+window.__game = { get state() { return state; }, get progress() { return progress; }, render };

@@ -86,3 +86,41 @@ kbd { background: #111; border: 1px solid #555; border-radius: 3px; padding: 1px
   position: absolute; top: 0; bottom: 0; width: 4px; background: #fff;
 }
 .timing-hint { margin-top: 6px; opacity: 0.85; }
+
+/* Timing-press grade feedback (human presses only). */
+.bar-marker.green { background: #2ecc40; width: 6px; }
+.bar-marker.yellow { background: #ffcc00; width: 6px; }
+.bar-marker.red { background: #5a0000; width: 8px; }
+.bar-track.miss { background: #5a0000; }
+
+/* Overthrow: the ball sails up into the crowd. */
+#ball.overthrow { animation: overthrow 1s ease-out; }
+@keyframes overthrow {
+  0%   { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -360%) rotate(540deg); opacity: 0; }
+}
+
+/* Battle-pass badge, top-left of the main menu. */
+#start-screen { position: relative; }
+#bp-badge {
+  position: absolute; top: 12px; left: 12px; text-align: left;
+  background: #111; border: 1px solid #444; border-radius: 6px; padding: 6px 10px;
+}
+#bp-level { font-weight: bold; font-size: 1rem; color: #ffd700; }
+.bp-bar {
+  margin-top: 4px; width: 110px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;
+}
+#bp-fill { height: 100%; width: 0%; background: #ffd700; }
+
+/* Start-screen coach-voice checkbox row. */
+.menu label.checkbox { justify-content: space-between; }
+.menu input[type="checkbox"] { width: 18px; height: 18px; }
+
+/* Locked team options (greyed by the browser; tidy the look). */
+.menu select option:disabled { color: #888; }
+
+/* Win screen. */
+#win-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 8px; }
+#win-xp { font-size: 1.2rem; color: #ffd700; margin-bottom: 8px; }
+#win-unlock { font-size: 1.2rem; color: #6cff6c; margin-bottom: 18px; }
+.win-buttons { display: flex; gap: 14px; justify-content: center; }

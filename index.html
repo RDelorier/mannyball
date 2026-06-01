@@ -9,6 +9,10 @@
 <body>
   <!-- Start screen -->
   <section id="start-screen" class="screen">
+    <div id="bp-badge">
+      <span id="bp-level">⭐ Lv 1</span>
+      <div class="bp-bar"><div id="bp-fill"></div></div>
+    </div>
     <h1>1D FOOTBALL</h1>
     <div class="menu">
       <label>Mode
@@ -31,6 +35,15 @@
           <option value="28">28</option>
         </select>
       </label>
+      <label>Home team
+        <select id="home-team"></select>
+      </label>
+      <label>Away team
+        <select id="away-team"></select>
+      </label>
+      <label class="checkbox">Coach voice
+        <input type="checkbox" id="voice-toggle" checked />
+      </label>
       <button id="start-btn">KICK OFF</button>
     </div>
     <p class="controls-hint">
@@ -41,20 +54,20 @@
   <!-- Game screen -->
   <section id="game-screen" class="screen hidden">
     <div id="scoreboard">
-      <span class="team home">HOME <b id="score-home">0</b></span>
+      <span class="team home"><span id="label-home">HOME</span> <b id="score-home">0</b></span>
       <span id="game-status">1st &amp; 10</span>
-      <span class="team away"><b id="score-away">0</b> AWAY</span>
+      <span class="team away"><b id="score-away">0</b> <span id="label-away">AWAY</span></span>
     </div>
     <div id="target-line">First to —</div>
 
     <div id="field">
-      <div class="endzone home-zone"><span>HOME</span></div>
+      <div class="endzone home-zone"><span id="endzone-home">HOME</span></div>
       <div id="gridiron">
         <div id="ball">🏈</div>
         <div id="defenders"></div>
         <div id="firstdown-line"></div>
       </div>
-      <div class="endzone away-zone"><span>AWAY</span></div>
+      <div class="endzone away-zone"><span id="endzone-away">AWAY</span></div>
     </div>
 
     <div id="message"></div>
@@ -82,8 +95,14 @@
 
   <!-- Win screen -->
   <section id="win-screen" class="screen hidden">
-    <h1 id="win-text">HOME WINS!</h1>
-    <button id="replay-btn">PLAY AGAIN</button>
+    <h1 id="win-heading">Well Done!</h1>
+    <p id="win-result"></p>
+    <p id="win-xp"></p>
+    <p id="win-unlock" class="hidden"></p>
+    <div class="win-buttons">
+      <button id="replay-btn">Play Again?</button>
+      <button id="back-btn">Back!</button>
+    </div>
   </section>
 
   <script type="module" src="src/game.js"></script>
