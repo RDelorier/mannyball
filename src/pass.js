@@ -18,7 +18,10 @@ export function nearestDefender(receiverYard, defenders) {
 //   green  -> interception (turnover at the target)
 //   yellow -> knockdown (incomplete, ball returns to the line of scrimmage)
 //   red    -> completion at the target (touchdown if it reaches the goal line)
-export function resolvePass({ startYard, targetYard, goalLine, ownGoal, direction, rushGrade, throwGrade, defenseGrade }) {
+export function resolvePass({
+  startYard, targetYard, goalLine, ownGoal, direction,
+  rushGrade, throwGrade, defenseGrade, dropChance = 0, dropRoll = 1,
+}) {
   if (rushGrade === 'red') {
     const sackYard = startYard - direction * 7;
     const behindOwnGoal = direction > 0 ? sackYard <= ownGoal : sackYard >= ownGoal;
@@ -30,12 +33,16 @@ export function resolvePass({ startYard, targetYard, goalLine, ownGoal, directio
   if (throwGrade === 'red') {
     return { outcome: 'overthrown', endYard: startYard, touchdown: false, turnover: false };
   }
+  // Weather can knock a catch loose (turning a catch/pick into an incompletion).
+  const dropped = dropRoll < dropChance;
   if (defenseGrade === 'green') {
+    if (dropped) return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false, dropped: true };
     return { outcome: 'interception', endYard: targetYard, touchdown: false, turnover: true };
   }
   if (defenseGrade === 'yellow') {
     return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false };
   }
+  if (dropped) return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false, dropped: true };
   const reachedGoal = direction > 0 ? targetYard >= goalLine : targetYard <= goalLine;
   return { outcome: 'completion', endYard: targetYard, touchdown: reachedGoal, turnover: false };
 }

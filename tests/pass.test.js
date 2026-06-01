@@ -57,6 +57,24 @@ test('away-direction sack moves the ball the other way', () => {
   assert.deepEqual(r, { outcome: 'sack', endYard: 57, touchdown: false, turnover: false });
 });
 
+test('bad weather can drop a sure catch (completion -> incomplete)', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 75, goalLine: 100, direction: 1, defenseGrade: 'red', dropChance: 0.5, dropRoll: 0.1 });
+  assert.equal(r.outcome, 'incomplete');
+  assert.equal(r.dropped, true);
+  assert.equal(r.endYard, 50);
+});
+
+test('weather can drop an interception too (no turnover)', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 75, goalLine: 100, direction: 1, defenseGrade: 'green', dropChance: 0.5, dropRoll: 0.1 });
+  assert.equal(r.outcome, 'incomplete');
+  assert.equal(r.turnover, false);
+});
+
+test('good hands (roll above dropChance) still complete', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 75, goalLine: 100, direction: 1, defenseGrade: 'red', dropChance: 0.5, dropRoll: 0.9 });
+  assert.equal(r.outcome, 'completion');
+});
+
 test('beating the rush proceeds to the throw/defense', () => {
   const r = resolvePass({ startYard: 50, targetYard: 70, goalLine: 100, ownGoal: 0, direction: 1, rushGrade: 'green', throwGrade: 'green', defenseGrade: 'red' });
   assert.equal(r.outcome, 'completion');

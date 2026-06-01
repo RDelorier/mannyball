@@ -62,6 +62,7 @@ const COACH = {
   intercepted: ['Picked off!', 'Turnover! Defense wins it!', 'He took it away!'],
   turnover: ['Turnover on downs!', 'Defense holds!'],
   overthrow: ['Ohh, into the crowd!', 'Way over his head!', 'Nobody was there!'],
+  drop: ['Dropped it!', 'Right through his hands!', "Couldn't hang on!"],
   evade: ['Beat the rush!', 'Step up in the pocket!', 'Get it off!'],
   sack: ['Sacked!', 'They got to him!', 'Down he goes for a loss!'],
   safety: ['Safety! Two points!', 'Tackled in the end zone!', 'That\'s a safety!'],
@@ -503,6 +504,7 @@ async function playPass() {
     startYard: state.ballOn, targetYard: clampedTarget,
     goalLine: state.goalLine, ownGoal: state.ownGoal, direction: state.direction,
     rushGrade, throwGrade, defenseGrade,
+    dropChance: cond().dropChance, dropRoll: Math.random(),
   });
 }
 
@@ -570,6 +572,8 @@ async function announce(events, result, spot) {
     setMessage('Overthrown into the crowd!'); coachSay(coachLine(COACH.overthrow), { interrupt: true });
   } else if (result && result.outcome === 'sack') {
     setMessage('SACKED! Loss of yards.'); coachSay(coachLine(COACH.sack), { interrupt: true });
+  } else if (result && result.dropped) {
+    setMessage('Dropped! 🌧️'); coachSay(coachLine(COACH.drop), { interrupt: true });
   } else if (result && result.outcome === 'incomplete') {
     setMessage('Incomplete.');
   } else {
