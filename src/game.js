@@ -9,6 +9,7 @@ import { resolveFieldGoal, resolvePunt, resolvePat, resolveOnside } from './kick
 import {
   TEAMS, teamById, isUnlocked, unlockLabel, bpProgress,
   updateStats, newlyUnlocked, levelForXp, xpForGame,
+  REWARD_TRACK, BALL_SKINS, unlockedBalls, unlockedFields, currentTitle, newRewards,
 } from './teams.js';
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 
@@ -39,6 +40,7 @@ let progress = loadProgress();
 let config = {
   mode: 'ai', difficulty: 'medium', target: 21,
   homeTeam: 'eagles', awayTeam: 'bears', humanSide: 'home', voice: true,
+  ball: 'football', field: 'classic',
 };
 let state = null;
 
@@ -87,6 +89,12 @@ function teamFor(side) {
   return teamById(side === 'home' ? config.homeTeam : config.awayTeam);
 }
 
+// Apply the chosen battle-pass cosmetics: ball skin glyph + field theme.
+function applyCosmetics() {
+  el('ball').textContent = (BALL_SKINS[config.ball] || BALL_SKINS.football).emoji;
+  el('field').className = config.field === 'classic' ? '' : `theme-${config.field}`;
+}
+
 function freshState() {
   const goals = offenseGoals('home');
   return {
@@ -117,14 +125,29 @@ function renderBadge() {
   el('bp-fill').style.width = (100 * into / needed) + '%';
 }
 
+// Build a <select> from a list of { id, emoji, name } options.
+function populateOptionSelect(select, options, selectedId) {
+  select.innerHTML = '';
+  for (const o of options) {
+    const opt = document.createElement('option');
+    opt.value = o.id;
+    opt.textContent = o.emoji ? `${o.emoji} ${o.name}` : o.name;
+    if (o.id === selectedId) opt.selected = true;
+    select.appendChild(opt);
+  }
+}
+
 function showStart() {
   renderBadge();
+  el('player-title').textContent = `RANK: ${currentTitle(progress).toUpperCase()}`;
   populateTeamSelect(el('home-team'), config.homeTeam);
   populateTeamSelect(el('away-team'), config.awayTeam);
+  populateOptionSelect(el('ball-select'), unlockedBalls(progress), config.ball);
+  populateOptionSelect(el('field-select'), unlockedFields(progress), config.field);
   showScreen(startScreen);
 }
 
-// Battle-pass screen: level/XP summary + every level-gated tier and its status.
+// Battle-pass screen: level/XP summary + the full 20-tier reward track.
 function showBattlePass() {
   const { level, into, needed } = bpProgress(progress.xp);
   el('bp-summary').textContent = `⭐ Lv ${level} — ${into} / ${needed} XP`;
@@ -132,20 +155,25 @@ function showBattlePass() {
 
   const list = el('bp-tiers');
   list.innerHTML = '';
-  TEAMS.filter((t) => t.unlock.type === 'level')
-    .sort((a, b) => a.unlock.n - b.unlock.n)
-    .forEach((t) => {
-      const unlocked = isUnlocked(t, progress);
-      const li = document.createElement('li');
-      li.className = unlocked ? 'unlocked' : 'locked';
-      const label = document.createElement('span');
-      label.textContent = `${t.emoji} ${t.name} — Lv ${t.unlock.n}`;
-      const status = document.createElement('span');
-      status.className = 'tier-status';
-      status.textContent = unlocked ? '✅ Unlocked' : '🔒 Locked';
-      li.append(label, status);
-      list.appendChild(li);
-    });
+  for (const r of REWARD_TRACK) {
+    const unlocked = level >= r.level;
+    const li = document.createElement('li');
+    li.className = unlocked ? 'unlocked' : 'locked';
+    if (r.level === level) li.classList.add('current');
+
+    const lvl = document.createElement('span');
+    lvl.className = 'tier-lvl';
+    lvl.textContent = `LV ${r.level}`;
+    const reward = document.createElement('span');
+    reward.className = 'tier-reward';
+    reward.textContent = `${r.emoji} ${r.label}`;
+    const status = document.createElement('span');
+    status.className = 'tier-status';
+    status.textContent = unlocked ? '✅' : '🔒';
+
+    li.append(lvl, reward, status);
+    list.appendChild(li);
+  }
 
   showScreen(bpScreen);
 }
@@ -176,8 +204,11 @@ function startGame() {
   config.target = Number(el('target-select').value);
   config.homeTeam = el('home-team').value || 'eagles';
   config.awayTeam = el('away-team').value || 'bears';
+  config.ball = el('ball-select').value || 'football';
+  config.field = el('field-select').value || 'classic';
   config.voice = el('voice-toggle').checked;
   setCoachEnabled(config.voice);
+  applyCosmetics();
   unlockAudio();
   initVoice();
 
@@ -210,7 +241,11 @@ function endGame(winner) {
     score: winnerScore,
   });
   const gained = xpForGame({ won: humanWon, score: humanWon ? winnerScore : 0 });
-  const unlocked = newlyUnlocked(before, after);
+  const teamUnlocks = newlyUnlocked(before, after).map((id) => {
+    const t = teamById(id); return `${t.emoji} ${t.name}`;
+  });
+  const rewardUnlocks = newRewards(before.xp, after.xp).map((r) => `${r.emoji} ${r.label}`);
+  const unlocked = [...teamUnlocks, ...rewardUnlocks];
   const leveledUp = levelForXp(after.xp) > levelForXp(before.xp);
   progress = after;
   saveProgress(progress);
@@ -225,9 +260,7 @@ function endGame(winner) {
   el('win-xp').textContent = xpText;
   const unlockEl = el('win-unlock');
   if (unlocked.length) {
-    unlockEl.textContent = '🔓 Unlocked: ' + unlocked.map((id) => {
-      const t = teamById(id); return `${t.emoji} ${t.name}`;
-    }).join(', ') + '!';
+    unlockEl.textContent = '🔓 Unlocked: ' + unlocked.join(', ') + '!';
     unlockEl.classList.remove('hidden');
   } else {
     unlockEl.classList.add('hidden');

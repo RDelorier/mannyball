@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   TEAMS, xpForGame, levelForXp, bpProgress, unlockLabel,
   isUnlocked, evaluateUnlocks, updateStats, newlyUnlocked, teamById,
+  REWARD_TRACK, unlockedBalls, unlockedFields, currentTitle, newRewards,
 } from '../src/teams.js';
 
 const ZERO = { wins: 0, hardWins: 0, highScore: 0, xp: 0 };
@@ -77,6 +78,33 @@ test('updateStats: a loss adds participation XP only', () => {
   assert.equal(after.wins, 0);
   assert.equal(after.highScore, 0);
   assert.equal(after.xp, 50);
+});
+
+test('REWARD_TRACK covers levels 1..20 in order', () => {
+  assert.equal(REWARD_TRACK.length, 20);
+  REWARD_TRACK.forEach((r, i) => assert.equal(r.level, i + 1));
+});
+
+test('unlockedBalls/Fields always include the default and add by level', () => {
+  assert.deepEqual(unlockedBalls({ xp: 0 }).map((b) => b.id), ['football']);
+  // Lv 3 unlocks the soccer ball (250 * 2 = Lv 3)
+  assert.ok(unlockedBalls({ xp: 250 * 2 }).map((b) => b.id).includes('soccer'));
+  assert.deepEqual(unlockedFields({ xp: 0 }).map((f) => f.id), ['classic']);
+  assert.ok(unlockedFields({ xp: 250 * 4 }).map((f) => f.id).includes('night')); // Lv 5
+});
+
+test('currentTitle climbs with level', () => {
+  assert.equal(currentTitle({ xp: 0 }), 'Rookie');         // Lv 1
+  assert.equal(currentTitle({ xp: 250 * 8 }), 'Pro');      // Lv 9
+  assert.equal(currentTitle({ xp: 250 * 19 }), 'Legend');  // Lv 20
+});
+
+test('newRewards reports non-team rewards crossed', () => {
+  // crossing Lv 2 -> Lv 3 grants the soccer ball (a non-team reward)
+  const got = newRewards(250 * 1, 250 * 2).map((r) => r.value);
+  assert.deepEqual(got, ['soccer']);
+  // a team-only level grants no non-team reward
+  assert.deepEqual(newRewards(250 * 0, 250 * 1).map((r) => r.value), []);
 });
 
 test('newlyUnlocked lists teams unlocked between snapshots', () => {

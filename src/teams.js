@@ -90,3 +90,72 @@ export function newlyUnlocked(before, after) {
 export function teamById(id) {
   return TEAMS.find((t) => t.id === id) || TEAMS[0];
 }
+
+// ---- Battle-pass reward track (one reward per level, 1..20) ----
+// kinds: 'team' (also in TEAMS), 'ball' (skin), 'field' (theme), 'title' (rank).
+
+export const BALL_SKINS = {
+  football: { emoji: '🏈', name: 'Football' },
+  soccer:   { emoji: '⚽', name: 'Soccer' },
+  softball: { emoji: '🥎', name: 'Softball' },
+  fireball: { emoji: '🔥', name: 'Fireball' },
+  rugby:    { emoji: '🏉', name: 'Rugby' },
+  disco:    { emoji: '🪩', name: 'Disco' },
+};
+
+export const FIELD_THEMES = {
+  classic: { name: 'Classic Green' },
+  night:   { name: 'Night' },
+  sunset:  { name: 'Sunset' },
+  ice:     { name: 'Ice' },
+};
+
+export const REWARD_TRACK = [
+  { level: 1,  kind: 'title', value: 'Rookie',   emoji: '🎽', label: 'Title: Rookie' },
+  { level: 2,  kind: 'team',  value: 'sharks',   emoji: '🦈', label: 'Team: Sharks' },
+  { level: 3,  kind: 'ball',  value: 'soccer',   emoji: '⚽', label: 'Ball: Soccer' },
+  { level: 4,  kind: 'team',  value: 'robots',   emoji: '🤖', label: 'Team: Robots' },
+  { level: 5,  kind: 'field', value: 'night',    emoji: '🌙', label: 'Field: Night' },
+  { level: 6,  kind: 'team',  value: 'aliens',   emoji: '👽', label: 'Team: Aliens' },
+  { level: 7,  kind: 'ball',  value: 'softball', emoji: '🥎', label: 'Ball: Softball' },
+  { level: 8,  kind: 'team',  value: 'dragons',  emoji: '🐉', label: 'Team: Dragons' },
+  { level: 9,  kind: 'title', value: 'Pro',      emoji: '🎽', label: 'Title: Pro' },
+  { level: 10, kind: 'team',  value: 'invaders', emoji: '👾', label: 'Team: Invaders' },
+  { level: 11, kind: 'ball',  value: 'fireball', emoji: '🔥', label: 'Ball: Fireball' },
+  { level: 12, kind: 'team',  value: 'joystick', emoji: '🕹️', label: 'Team: Joysticks' },
+  { level: 13, kind: 'field', value: 'sunset',   emoji: '🌅', label: 'Field: Sunset' },
+  { level: 14, kind: 'team',  value: 'ghosts',   emoji: '👻', label: 'Team: Ghosts' },
+  { level: 15, kind: 'ball',  value: 'rugby',    emoji: '🏉', label: 'Ball: Rugby' },
+  { level: 16, kind: 'team',  value: 'ufos',     emoji: '🛸', label: 'Team: UFOs' },
+  { level: 17, kind: 'title', value: 'All-Star', emoji: '🌟', label: 'Title: All-Star' },
+  { level: 18, kind: 'field', value: 'ice',      emoji: '🧊', label: 'Field: Ice' },
+  { level: 19, kind: 'ball',  value: 'disco',    emoji: '🪩', label: 'Ball: Disco' },
+  { level: 20, kind: 'title', value: 'Legend',   emoji: '🏆', label: 'Title: Legend' },
+];
+
+// Unlocked ball skins for the given progress (always includes the default).
+export function unlockedBalls(progress) {
+  const lvl = levelForXp(progress.xp || 0);
+  const ids = ['football', ...REWARD_TRACK.filter((r) => r.kind === 'ball' && lvl >= r.level).map((r) => r.value)];
+  return ids.map((id) => ({ id, ...BALL_SKINS[id] }));
+}
+
+// Unlocked field themes for the given progress (always includes the default).
+export function unlockedFields(progress) {
+  const lvl = levelForXp(progress.xp || 0);
+  const ids = ['classic', ...REWARD_TRACK.filter((r) => r.kind === 'field' && lvl >= r.level).map((r) => r.value)];
+  return ids.map((id) => ({ id, ...FIELD_THEMES[id] }));
+}
+
+// Highest rank title unlocked for the given progress (defaults to 'Rookie').
+export function currentTitle(progress) {
+  const lvl = levelForXp(progress.xp || 0);
+  const titles = REWARD_TRACK.filter((r) => r.kind === 'title' && lvl >= r.level);
+  return titles.length ? titles[titles.length - 1].value : 'Rookie';
+}
+
+// Non-team rewards (balls/fields/titles) unlocked crossing from one XP to another.
+export function newRewards(beforeXp, afterXp) {
+  const lb = levelForXp(beforeXp || 0), la = levelForXp(afterXp || 0);
+  return REWARD_TRACK.filter((r) => r.kind !== 'team' && r.level > lb && r.level <= la);
+}
