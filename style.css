@@ -16,6 +16,7 @@
   --line: rgba(57, 255, 20, 0.28);
   --display: 'Press Start 2P', 'Courier New', monospace;
   --body: 'Saira', system-ui, sans-serif;
+  --tilt: 32deg;          /* pseudo-3D field rake */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -139,10 +140,11 @@ kbd {
   margin: -14px 0 22px;
 }
 
-/* ---- Game screen (fullscreen) ---- */
+/* ---- Game screen (fullscreen, pseudo-3D field) ---- */
 #game-screen {
   width: 100vw; max-width: none; height: 100vh; padding: 10px 16px;
   display: flex; flex-direction: column; gap: 8px; justify-content: flex-start;
+  perspective: 1100px; perspective-origin: 50% 40%;
 }
 #game-screen #message { margin: 8px 0; }
 
@@ -183,9 +185,12 @@ kbd {
 
 /* ---- Field ---- */
 #field {
-  display: flex; flex: 1; min-height: 180px; overflow: hidden;
+  display: flex; flex: 1; min-height: 180px;
   border: 2px solid var(--green); border-radius: 8px;
   box-shadow: 0 0 36px rgba(57, 255, 20, 0.28), inset 0 0 50px rgba(0, 0, 0, 0.55);
+  transform: rotateX(var(--tilt));
+  transform-origin: center 62%;
+  transform-style: preserve-3d;
 }
 .endzone {
   width: 84px; display: flex; align-items: center; justify-content: center;
@@ -208,16 +213,19 @@ kbd {
   content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
   background: rgba(57, 255, 20, 0.35); transform: translateX(-50%);
 }
-#players { position: absolute; inset: 0; z-index: 1; }
+#gridiron { transform-style: preserve-3d; }
+
+#players { position: absolute; inset: 0; z-index: 1; transform-style: preserve-3d; }
 #players .player {
-  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  position: absolute; top: 50%; transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt)));
   font-size: 1.5rem; opacity: 0.9; transition: left 0.4s ease;
 }
 #players .player.home { filter: drop-shadow(0 0 5px var(--home)); }
 #players .player.away { filter: drop-shadow(0 0 5px var(--away)); }
 
 #ball {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt)));
   font-size: 2.6rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));
   transition: left 0.4s ease; z-index: 3;
 }
@@ -225,11 +233,12 @@ kbd {
   position: absolute; top: 0; bottom: 0; width: 3px;
   background: var(--amber); box-shadow: 0 0 12px var(--amber); z-index: 2;
 }
+#defenders { transform-style: preserve-3d; }
 #defenders .defender {
-  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  position: absolute; top: 50%; transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt)));
   font-size: 2rem; z-index: 2; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7));
 }
-#defenders .defender.nearest { transform: translate(-50%, -50%) scale(1.4); filter: drop-shadow(0 0 8px var(--amber)); }
+#defenders .defender.nearest { transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt))) scale(1.4); filter: drop-shadow(0 0 8px var(--amber)); }
 #defenders .defender.rusher { filter: drop-shadow(0 0 8px var(--away)); }
 
 #message {
