@@ -195,11 +195,29 @@ kbd {
   margin: 6px 0;
 }
 .endzone {
-  width: 84px; display: flex; align-items: center; justify-content: center;
-  writing-mode: vertical-rl; text-orientation: upright;
-  font-family: var(--display); font-size: 0.72rem; letter-spacing: 2px;
+  width: 104px; position: relative; transform-style: preserve-3d;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--display); font-size: 0.6rem; letter-spacing: 1px;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
 }
+/* Painted endzone logo (lies flat on the field plane, like real turf art). */
+.endzone .logo { font-size: 2.6rem; opacity: 0.85; }
+.endzone .zone-name { opacity: 0.9; text-align: center; }
+
+/* Field-goal uprights standing at the back of each end zone. */
+.goalpost {
+  position: absolute; top: 50%; width: 40px; height: 66px; z-index: 0;
+  transform-origin: center bottom;
+  transform: translateY(-100%) rotateX(calc(-1 * var(--tilt)));
+}
+.home-zone .goalpost { left: 8px; }
+.away-zone .goalpost { right: 8px; }
+.goalpost span { position: absolute; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.goalpost .up { top: 0; width: 4px; height: 44px; }
+.goalpost .up.left { left: 6px; }
+.goalpost .up.right { right: 6px; }
+.goalpost .cross { left: 6px; right: 6px; top: 40px; height: 4px; }
+.goalpost .pole { left: 50%; transform: translateX(-50%); top: 40px; width: 4px; height: 26px; }
 .home-zone { background: linear-gradient(180deg, #0e3f6b, #0a2a48); color: #aee3ff; }
 .away-zone { background: linear-gradient(180deg, #6b1326, #481018); color: #ffc2cd; }
 

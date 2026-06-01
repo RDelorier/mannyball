@@ -186,8 +186,10 @@ function render() {
   const home = teamFor('home'), away = teamFor('away');
   el('label-home').textContent = `${home.emoji} ${home.name.toUpperCase()}`;
   el('label-away').textContent = `${away.emoji} ${away.name.toUpperCase()}`;
-  el('endzone-home').textContent = `${home.emoji} ${home.name}`;
-  el('endzone-away').textContent = `${away.emoji} ${away.name}`;
+  el('logo-home').textContent = home.emoji;
+  el('logo-away').textContent = away.emoji;
+  el('endzone-home').textContent = home.name.toUpperCase();
+  el('endzone-away').textContent = away.name.toUpperCase();
   el('score-home').textContent = state.scoreHome;
   el('score-away').textContent = state.scoreAway;
   el('target-line').textContent = `First to ${config.target}`;
