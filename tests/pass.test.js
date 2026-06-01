@@ -29,3 +29,13 @@ test('completion in the end zone is a touchdown', () => {
   assert.equal(r.outcome, 'completion');
   assert.equal(r.touchdown, true);
 });
+
+test('a really bad throw (red) sails into the crowd', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 75, goalLine: 100, direction: 1, throwGrade: 'red', defenseGrade: 'green' });
+  assert.deepEqual(r, { outcome: 'overthrown', endYard: 50, touchdown: false, turnover: false });
+});
+
+test('a good throw still resolves on the defense grade', () => {
+  const r = resolvePass({ startYard: 50, targetYard: 75, goalLine: 100, direction: 1, throwGrade: 'green', defenseGrade: 'red' });
+  assert.equal(r.outcome, 'completion');
+});

@@ -10,11 +10,16 @@ export function nearestDefender(receiverYard, defenders) {
   return best;
 }
 
-// Resolve a pass given the nearest defender's timing grade.
+// Resolve a pass.
+//   throwGrade 'red'  -> overthrown into the crowd (incomplete, no defense involved)
+// Otherwise the nearest defender's grade decides:
 //   green  -> interception (turnover at the target)
 //   yellow -> knockdown (incomplete, ball returns to the line of scrimmage)
 //   red    -> completion at the target (touchdown if it reaches the goal line)
-export function resolvePass({ startYard, targetYard, goalLine, direction, defenseGrade }) {
+export function resolvePass({ startYard, targetYard, goalLine, direction, throwGrade, defenseGrade }) {
+  if (throwGrade === 'red') {
+    return { outcome: 'overthrown', endYard: startYard, touchdown: false, turnover: false };
+  }
   if (defenseGrade === 'green') {
     return { outcome: 'interception', endYard: targetYard, touchdown: false, turnover: true };
   }
