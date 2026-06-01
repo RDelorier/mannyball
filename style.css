@@ -303,12 +303,10 @@ kbd {
 /* The bar itself is a rainbow arc: a conic rainbow masked to a top half-ring. */
 .bar-track {
   position: relative; width: 300px; height: 150px;
-  background: conic-gradient(from -90deg at 50% 100%,
-    #ff004d 0deg, #ff8a00 30deg, #ffe600 60deg, #00e676 90deg,
-    #00b0ff 120deg, #7c4dff 175deg, transparent 180deg);
+  background: rgba(220, 255, 230, 0.22);
   -webkit-mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
   mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
+  filter: drop-shadow(0 0 6px rgba(57, 255, 20, 0.2));
 }
 .bar-track.miss { filter: drop-shadow(0 0 10px #ff3b3b) saturate(0.3) brightness(0.6); }
 
