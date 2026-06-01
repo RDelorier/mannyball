@@ -330,8 +330,10 @@ function runTimingBar(key, hint) {
   bar.classList.remove('hidden');
 
   return new Promise((resolve) => {
-    let pos = 0, dir = 1, rafId = 0;
-    const speed = (BAR_SPEED[config.difficulty] || 1.4) * cond().barSpeedMult; // percent per frame
+    let pos = 0, dir = 1, rafId = 0, last = null;
+    const trackW = track.clientWidth || 520;
+    // percent/second (BAR_SPEED was tuned per-frame at ~60fps), time-based for smoothness
+    const perSec = (BAR_SPEED[config.difficulty] || 1.4) * cond().barSpeedMult * 60;
 
     function finish(grade) {
       cancelAnimationFrame(rafId);
@@ -352,11 +354,14 @@ function runTimingBar(key, hint) {
       finish(gradePress(pos, sweet));
     }
 
-    function frame() {
-      pos += dir * speed;
+    function frame(ts) {
+      if (last === null) last = ts;
+      const dt = Math.min((ts - last) / 1000, 0.05); // clamp big gaps (tab refocus)
+      last = ts;
+      pos += dir * perSec * dt;
       if (pos >= 100) { pos = 100; dir = -1; }
       if (pos <= 0) { pos = 0; dir = 1; }
-      marker.style.left = pos + '%';
+      marker.style.transform = `translateX(${(pos / 100) * trackW}px)`;
       rafId = requestAnimationFrame(frame);
     }
 

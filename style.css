@@ -307,7 +307,7 @@ kbd {
 }
 .bar-track.miss { background: #3a0000; border-color: #ff3b3b; }
 .sweet-zone { position: absolute; top: 0; bottom: 0; background: var(--green); opacity: 0.7; box-shadow: 0 0 18px var(--green); }
-.bar-marker { position: absolute; top: 0; bottom: 0; width: 4px; background: #fff; box-shadow: 0 0 8px #fff; }
+.bar-marker { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: #fff; box-shadow: 0 0 8px #fff; will-change: transform; }
 .bar-marker.green { background: var(--green); box-shadow: 0 0 12px var(--green); }
 .bar-marker.yellow { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
 .bar-marker.red { background: #5a0000; width: 8px; box-shadow: 0 0 12px #ff3b3b; }
