@@ -204,6 +204,14 @@ kbd {
   content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
   background: rgba(57, 255, 20, 0.35); transform: translateX(-50%);
 }
+#players { position: absolute; inset: 0; z-index: 1; }
+#players .player {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  font-size: 1.5rem; opacity: 0.9; transition: left 0.4s ease;
+}
+#players .player.home { filter: drop-shadow(0 0 5px var(--home)); }
+#players .player.away { filter: drop-shadow(0 0 5px var(--away)); }
+
 #ball {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
   font-size: 2.6rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));

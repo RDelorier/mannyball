@@ -195,6 +195,26 @@ function render() {
     `${teamFor(state.possession).name.toUpperCase()} ball · ${ordinal(state.down)} & ${distLabel}`;
   el('ball').style.left = yardToPercent(state.ballOn);
   el('firstdown-line').style.left = yardToPercent(state.lineToGain);
+  renderPlayers();
+}
+
+// Persistent formation: offense teammates behind the ball, defenders ahead of it,
+// each colored by their side. Sits behind the ball and the active play markers.
+function renderPlayers() {
+  const wrap = el('players');
+  wrap.innerHTML = '';
+  const d = state.direction;
+  const add = (yard, emoji, side) => {
+    if (yard < 0 || yard > 100) return;
+    const div = document.createElement('div');
+    div.className = `player ${side}`;
+    div.textContent = emoji;
+    div.style.left = yardToPercent(yard);
+    wrap.appendChild(div);
+  };
+  // Offense (with the ball) lines up behind the spot; defense spreads ahead.
+  [d * 3, d * 7].forEach((off) => add(state.ballOn - off, '🏃', state.possession));
+  [d * 9, d * 16].forEach((off) => add(state.ballOn + off, '🧍', defendingTeam()));
 }
 
 // ---- Screen flow ----
