@@ -40,6 +40,17 @@ test('aiPassDefenseGrade intercepts far less often than offense timing', () => {
   assert.equal(aiPassDefenseGrade('easy', 0.3), 'yellow');
 });
 
+test('EXTREME difficulty is tougher than hard across the board', () => {
+  // offense timing: extreme greens almost everything
+  assert.equal(aiTimingGrade('extreme', 0.9), 'green');
+  assert.equal(aiTimingGrade('hard', 0.9), 'red'); // hard would miss the same roll
+  // pass defense: extreme intercepts more
+  assert.equal(aiPassDefenseGrade('extreme', 0.45), 'green');
+  assert.equal(aiPassDefenseGrade('hard', 0.45), 'yellow');
+  // onside: extreme gambles more when trailing
+  assert.equal(onsideDecision({ scoreDiff: -3, difficulty: 'extreme', roll: 0.45 }), true);
+});
+
 test('onsideDecision only when trailing and within probability', () => {
   assert.equal(onsideDecision({ scoreDiff: 5, difficulty: 'hard', roll: 0.0 }), false);
   assert.equal(onsideDecision({ scoreDiff: -5, difficulty: 'hard', roll: 0.3 }), true);

@@ -263,6 +263,19 @@ kbd {
   100% { transform: translate(-50%, -360%) rotate(540deg); opacity: 0; }
 }
 
+/* ---- EXTREME mode flair ---- */
+body.extreme #field {
+  border-color: #ff3b3b;
+  box-shadow: 0 0 40px rgba(255, 59, 59, 0.5), inset 0 0 50px rgba(0, 0, 0, 0.55);
+  animation: extreme-pulse 1.2s ease-in-out infinite;
+}
+body.extreme .bar-track { border-color: #ff3b3b; }
+body.extreme #game-status { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 59, 59, 0.6); }
+@keyframes extreme-pulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 59, 59, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.55); }
+  50% { box-shadow: 0 0 55px rgba(255, 59, 59, 0.8), inset 0 0 50px rgba(0, 0, 0, 0.55); }
+}
+
 /* ---- Battle-pass screen ---- */
 #bp-summary { font-family: var(--display); font-size: 1rem; color: var(--amber); text-shadow: 0 0 10px rgba(255, 210, 63, 0.5); margin-bottom: 12px; }
 .bp-bar.big { width: min(440px, 90%); height: 14px; margin: 0 auto 22px; }

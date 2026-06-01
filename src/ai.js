@@ -15,6 +15,7 @@ const DIFFICULTY = {
   easy: { green: 0.4, yellow: 0.7, onside: 0.1 },
   medium: { green: 0.6, yellow: 0.85, onside: 0.2 },
   hard: { green: 0.8, yellow: 0.95, onside: 0.35 },
+  extreme: { green: 0.92, yellow: 0.99, onside: 0.5 },
 };
 
 // AI timing grade from difficulty thresholds.
@@ -33,6 +34,7 @@ const DEFENSE = {
   easy: { green: 0.12, yellow: 0.55 },
   medium: { green: 0.22, yellow: 0.65 },
   hard: { green: 0.35, yellow: 0.75 },
+  extreme: { green: 0.5, yellow: 0.85 },
 };
 
 // AI grade when defending a pass (green = interception).

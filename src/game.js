@@ -15,6 +15,9 @@ import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 
 const SWEET = { center: 50, green: 5, yellow: 20 }; // tight green window
 
+// Timing-bar sweep speed (percent/frame) by difficulty — EXTREME is frantic.
+const BAR_SPEED = { easy: 1.2, medium: 1.4, hard: 1.8, extreme: 2.7 };
+
 // ---- DOM ----
 const el = (id) => document.getElementById(id);
 const startScreen = el('start-screen');
@@ -228,6 +231,7 @@ function startGame() {
   config.field = el('field-select').value || 'classic';
   config.voice = el('voice-toggle').checked;
   setCoachEnabled(config.voice);
+  document.body.classList.toggle('extreme', config.difficulty === 'extreme');
   applyCosmetics();
   unlockAudio();
   initVoice();
@@ -257,7 +261,7 @@ function endGame(winner) {
   const before = progress;
   const after = updateStats(before, {
     won: humanWon,
-    hard: config.mode === 'ai' && config.difficulty === 'hard',
+    hard: config.mode === 'ai' && (config.difficulty === 'hard' || config.difficulty === 'extreme'),
     score: winnerScore,
   });
   const gained = xpForGame({ won: humanWon, score: humanWon ? winnerScore : 0 });
@@ -309,7 +313,7 @@ function runTimingBar(key, hint) {
 
   return new Promise((resolve) => {
     let pos = 0, dir = 1, rafId = 0;
-    const speed = 1.4; // percent per frame
+    const speed = BAR_SPEED[config.difficulty] || 1.4; // percent per frame
 
     function finish(grade) {
       cancelAnimationFrame(rafId);
