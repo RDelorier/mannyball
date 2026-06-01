@@ -235,6 +235,30 @@ kbd {
 }
 #gridiron { transform-style: preserve-3d; }
 
+/* ---- Weather / field conditions overlay ---- */
+#weather { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+#weather.rain {
+  background-image: repeating-linear-gradient(105deg, rgba(180, 205, 255, 0.4) 0 1px, transparent 1px 8px);
+  animation: wx-rain 0.4s linear infinite;
+}
+@keyframes wx-rain { from { background-position: 0 0; } to { background-position: -44px 130px; } }
+#weather.snow {
+  background-image:
+    radial-gradient(2px 2px at 20% 10%, #fff 60%, transparent 61%),
+    radial-gradient(2px 2px at 55% 30%, #fff 60%, transparent 61%),
+    radial-gradient(3px 3px at 80% 60%, #fff 60%, transparent 61%),
+    radial-gradient(2px 2px at 35% 75%, #fff 60%, transparent 61%);
+  background-size: 130px 130px;
+  animation: wx-snow 3.5s linear infinite;
+}
+@keyframes wx-snow { from { background-position: 0 0; } to { background-position: 12px 130px; } }
+#weather.wind {
+  background-image: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.07) 0 30px, transparent 30px 90px);
+  animation: wx-wind 0.8s linear infinite;
+}
+@keyframes wx-wind { from { background-position: 0 0; } to { background-position: 130px 0; } }
+#weather.fog { background: linear-gradient(rgba(225, 228, 235, 0.22), rgba(210, 214, 224, 0.34)); backdrop-filter: blur(1.5px); }
+
 #players { position: absolute; inset: 0; z-index: 1; transform-style: preserve-3d; }
 #players .player {
   position: absolute; top: 50%; transform-origin: center bottom;

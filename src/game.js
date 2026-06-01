@@ -12,6 +12,7 @@ import {
   REWARD_TRACK, BALL_SKINS, unlockedBalls, unlockedFields, currentTitle, newRewards,
 } from './teams.js';
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
+import { CONDITIONS, conditionById } from './conditions.js';
 
 const SWEET = { center: 50, green: 5, yellow: 20 }; // tight green window
 
@@ -43,9 +44,12 @@ let progress = loadProgress();
 let config = {
   mode: 'ai', difficulty: 'medium', target: 21,
   homeTeam: 'eagles', awayTeam: 'bears', humanSide: 'home', voice: true,
-  ball: 'football', field: 'classic',
+  ball: 'football', field: 'classic', condition: 'clear',
 };
 let state = null;
+
+// The active field condition (weather) object.
+function cond() { return conditionById(config.condition); }
 
 // ---- Coach phrase pools ----
 const COACH = {
@@ -96,6 +100,7 @@ function teamFor(side) {
 function applyCosmetics() {
   el('ball').textContent = (BALL_SKINS[config.ball] || BALL_SKINS.football).emoji;
   el('field').className = config.field === 'classic' ? '' : `theme-${config.field}`;
+  el('weather').className = cond().overlay || '';
 }
 
 function freshState() {
@@ -147,6 +152,7 @@ function showStart() {
   populateTeamSelect(el('away-team'), config.awayTeam);
   populateOptionSelect(el('ball-select'), unlockedBalls(progress), config.ball);
   populateOptionSelect(el('field-select'), unlockedFields(progress), config.field);
+  populateOptionSelect(el('condition-select'), CONDITIONS, config.condition);
   showScreen(startScreen);
 }
 
@@ -231,6 +237,7 @@ function startGame() {
   config.awayTeam = el('away-team').value || 'bears';
   config.ball = el('ball-select').value || 'football';
   config.field = el('field-select').value || 'classic';
+  config.condition = el('condition-select').value || 'clear';
   config.voice = el('voice-toggle').checked;
   setCoachEnabled(config.voice);
   document.body.classList.toggle('extreme', config.difficulty === 'extreme');
@@ -315,7 +322,7 @@ function runTimingBar(key, hint) {
 
   return new Promise((resolve) => {
     let pos = 0, dir = 1, rafId = 0;
-    const speed = BAR_SPEED[config.difficulty] || 1.4; // percent per frame
+    const speed = (BAR_SPEED[config.difficulty] || 1.4) * cond().barSpeedMult; // percent per frame
 
     function finish(grade) {
       cancelAnimationFrame(rafId);
@@ -516,7 +523,7 @@ async function runDown() {
 // Offense picks a play. Humans click; AI decides.
 function choosePlay(fourth) {
   if (!isHuman(state.possession)) {
-    if (fourth) return Promise.resolve(fourthDownDecision({ ballOn: state.ballOn, goalLine: state.goalLine }));
+    if (fourth) return Promise.resolve(fourthDownDecision({ ballOn: state.ballOn, goalLine: state.goalLine, fgMaxRange: cond().fgMaxRange }));
     return Promise.resolve(callPlay(Math.random()));
   }
   return new Promise((resolve) => {
@@ -564,7 +571,7 @@ async function runKick(kind) {
     : aiPress();
 
   if (kind === 'fieldgoal') {
-    const { good } = resolveFieldGoal({ ballOn: state.ballOn, goalLine: state.goalLine, accuracyGrade: grade });
+    const { good } = resolveFieldGoal({ ballOn: state.ballOn, goalLine: state.goalLine, accuracyGrade: grade, maxRange: cond().fgMaxRange });
     if (good) {
       state = addScore(state, kicker, 3);
       render();
