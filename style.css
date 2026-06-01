@@ -307,7 +307,16 @@ kbd {
 }
 .bar-track.miss { background: #3a0000; border-color: #ff3b3b; }
 .sweet-zone { position: absolute; top: 0; bottom: 0; background: var(--green); opacity: 0.7; box-shadow: 0 0 18px var(--green); }
-.bar-marker { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: #fff; box-shadow: 0 0 8px #fff; will-change: transform; }
+.bar-marker {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 6px; border-radius: 3px;
+  background: linear-gradient(180deg, #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #7c4dff);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+  will-change: transform, filter;
+  animation: rainbow-hue 1.1s linear infinite;
+}
+@keyframes rainbow-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+/* On a graded press, freeze to the solid feedback color. */
+.bar-marker.green, .bar-marker.yellow, .bar-marker.red { animation: none; filter: none; background-image: none; }
 .bar-marker.green { background: var(--green); box-shadow: 0 0 12px var(--green); }
 .bar-marker.yellow { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
 .bar-marker.red { background: #5a0000; width: 8px; box-shadow: 0 0 12px #ff3b3b; }
