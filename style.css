@@ -307,19 +307,31 @@ kbd {
 }
 .bar-track.miss { background: #3a0000; border-color: #ff3b3b; }
 .sweet-zone { position: absolute; top: 0; bottom: 0; background: var(--green); opacity: 0.7; box-shadow: 0 0 18px var(--green); }
+/* Rainbow arc: concentric color bands around a bottom-centered point form a dome. */
 .bar-marker {
-  position: absolute; top: 0; bottom: 0; left: 0; width: 6px; border-radius: 3px;
-  background: linear-gradient(180deg, #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #7c4dff);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+  position: absolute; top: 50%; left: 0; width: 48px; height: 24px;
+  background: radial-gradient(circle at 50% 100%,
+    transparent 0 5px,
+    #7c4dff 5px 7.7px,
+    #00b0ff 7.7px 10.4px,
+    #00e676 10.4px 13.1px,
+    #ffe600 13.1px 15.8px,
+    #ff8a00 15.8px 18.5px,
+    #ff004d 18.5px 21px,
+    transparent 21px);
   will-change: transform, filter;
   animation: rainbow-hue 1.1s linear infinite;
+  pointer-events: none;
 }
-@keyframes rainbow-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
-/* On a graded press, freeze to the solid feedback color. */
-.bar-marker.green, .bar-marker.yellow, .bar-marker.red { animation: none; filter: none; background-image: none; }
-.bar-marker.green { background: var(--green); box-shadow: 0 0 12px var(--green); }
-.bar-marker.yellow { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
-.bar-marker.red { background: #5a0000; width: 8px; box-shadow: 0 0 12px #ff3b3b; }
+@keyframes rainbow-hue {
+  from { filter: hue-rotate(0deg) drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); }
+  to { filter: hue-rotate(360deg) drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); }
+}
+/* On a graded press, freeze the arc and tint it with feedback. */
+.bar-marker.green, .bar-marker.yellow, .bar-marker.red { animation: none; }
+.bar-marker.green { filter: drop-shadow(0 0 12px var(--green)) brightness(1.3); }
+.bar-marker.yellow { filter: drop-shadow(0 0 12px var(--amber)); }
+.bar-marker.red { filter: drop-shadow(0 0 12px #ff3b3b) saturate(0.25) brightness(0.55); }
 .timing-hint { margin-top: 8px; opacity: 0.85; letter-spacing: 1px; }
 
 /* Overthrow: the ball sails up into the crowd. */

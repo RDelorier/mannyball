@@ -361,7 +361,7 @@ function runTimingBar(key, hint) {
       pos += dir * perSec * dt;
       if (pos >= 100) { pos = 100; dir = -1; }
       if (pos <= 0) { pos = 0; dir = 1; }
-      marker.style.transform = `translateX(${(pos / 100) * trackW}px)`;
+      marker.style.transform = `translate(calc(${(pos / 100) * trackW}px - 50%), -50%)`;
       rafId = requestAnimationFrame(frame);
     }
 
