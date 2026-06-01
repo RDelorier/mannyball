@@ -1,7 +1,11 @@
 import { offenseGoals, newLineToGain, checkWin } from './rules.js';
 import { unlockAudio, playCrowdRoar } from './sound.js';
+import { gradePress } from './timing.js';
+import { aiTimingGrade } from './ai.js';
 
 const FIELD_LEN = 100; // yard 0..100 maps across #gridiron width
+const SWEET = { center: 50, green: 9, yellow: 20 }; // percent-based sweet spot
+let activeTiming = null; // { key, resolve } while a bar is live
 
 // ---- DOM ----
 const el = (id) => document.getElementById(id);
@@ -67,12 +71,65 @@ function startGame() {
   state = freshState();
   showScreen(gameScreen);
   render();
-  setMessage('Game on! (plays wired in the next task)');
+  setMessage('');
 }
 
 function endGame(winner) {
   el('win-text').textContent = `${winner.toUpperCase()} WINS!`;
   showScreen(winScreen);
+}
+
+// Run an animated timing bar. Resolves with 'green' | 'yellow' | 'red'.
+// `key` is the keyboard key that triggers the press (e.g. 'a', 'l', ' ').
+function runTimingBar(key, hint) {
+  const bar = el('timing-bar');
+  const marker = bar.querySelector('.bar-marker');
+  const zone = bar.querySelector('.sweet-zone');
+  bar.querySelector('.timing-hint').textContent = hint;
+
+  // Position the green zone from the SWEET config (percent across the track).
+  zone.style.left = (SWEET.center - SWEET.yellow) + '%';
+  zone.style.width = (SWEET.yellow * 2) + '%';
+
+  bar.classList.remove('hidden');
+
+  return new Promise((resolve) => {
+    let pos = 0;
+    let dir = 1;
+    let rafId = 0;
+    const speed = 1.4; // percent per frame
+
+    function finish(grade) {
+      cancelAnimationFrame(rafId);
+      bar.classList.add('hidden');
+      window.removeEventListener('keydown', onKey);
+      activeTiming = null;
+      resolve(grade);
+    }
+
+    function onKey(e) {
+      if (e.key.toLowerCase() !== key) return;
+      e.preventDefault();
+      finish(gradePress(pos, SWEET));
+    }
+
+    function frame() {
+      pos += dir * speed;
+      if (pos >= 100) { pos = 100; dir = -1; }
+      if (pos <= 0) { pos = 0; dir = 1; }
+      marker.style.left = pos + '%';
+      rafId = requestAnimationFrame(frame);
+    }
+
+    activeTiming = { key, resolve: finish };
+    window.addEventListener('keydown', onKey);
+    rafId = requestAnimationFrame(frame);
+  });
+}
+
+// AI "presses" the bar by producing a grade from difficulty (no animation).
+function aiPress() {
+  return aiTimingGrade(config.difficulty, Math.random());
 }
 
 // ---- Wiring ----
