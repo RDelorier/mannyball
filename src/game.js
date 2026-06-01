@@ -203,8 +203,14 @@ function render() {
   const toGoal = Math.abs(state.goalLine - state.ballOn);
   const dist = distanceToGain();
   const distLabel = dist >= toGoal ? 'Goal' : dist;
-  el('game-status').textContent =
-    `${teamFor(state.possession).name.toUpperCase()} ball · ${ordinal(state.down)} & ${distLabel}`;
+  // Make whose ball it is obvious: highlight the team on offense, dim the other.
+  const homeBall = state.possession === 'home';
+  el('label-home').parentElement.classList.toggle('has-ball', homeBall);
+  el('label-away').parentElement.classList.toggle('has-ball', !homeBall);
+  let turn;
+  if (config.mode === '2p') turn = `🏈 ${teamFor(state.possession).name.toUpperCase()} BALL`;
+  else turn = state.possession === config.humanSide ? '🏈 YOUR BALL' : '🛡️ DEFENSE (AI BALL)';
+  el('game-status').textContent = `${turn} · ${ordinal(state.down)} & ${distLabel}`;
   el('ball').style.left = yardToPercent(state.ballOn);
   el('firstdown-line').style.left = yardToPercent(state.lineToGain);
   renderPlayers();

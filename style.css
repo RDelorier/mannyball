@@ -183,7 +183,9 @@ kbd {
   box-shadow: 0 0 26px rgba(57, 255, 20, 0.12), inset 0 0 34px rgba(0, 0, 0, 0.65);
   position: relative; z-index: 5;
 }
-.team { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 1px; }
+.team { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 1px; opacity: 0.4; transition: opacity 0.25s, transform 0.25s; }
+.team.has-ball { opacity: 1; transform: scale(1.08); }
+.team.has-ball b { filter: drop-shadow(0 0 10px currentColor); }
 .team b { font-family: var(--display); font-size: 1.5rem; }
 .team.home b { color: var(--home); text-shadow: 0 0 12px rgba(56, 198, 255, 0.7); }
 .team.away b { color: var(--away); text-shadow: 0 0 12px rgba(255, 77, 109, 0.7); }
