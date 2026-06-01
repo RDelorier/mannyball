@@ -6,6 +6,9 @@ import { resolveRush } from './rush.js';
 import { nearestDefender, resolvePass } from './pass.js';
 import { applyDownResult } from './rules.js';
 import { callPlay } from './ai.js';
+import { resolveFieldGoal, resolvePunt, resolvePat, resolveOnside } from './kick.js';
+import { addScore, flipPossession } from './rules.js';
+import { fourthDownDecision, onsideDecision } from './ai.js';
 
 const FIELD_LEN = 100; // yard 0..100 maps across #gridiron width
 const SWEET = { center: 50, green: 9, yellow: 20 }; // percent-based sweet spot
@@ -76,6 +79,9 @@ function startGame() {
   showScreen(gameScreen);
   render();
   setMessage('');
+  // Opening possession: home receives at its own 25.
+  setPossession('home', 25);
+  render();
   runDown();
 }
 
@@ -238,6 +244,7 @@ async function runDown() {
 // Offense picks a play. Humans click; AI decides.
 function choosePlay(fourth) {
   if (!isHuman(state.possession)) {
+    if (fourth) return Promise.resolve(fourthDownDecision({ ballOn: state.ballOn, goalLine: state.goalLine }));
     return Promise.resolve(callPlay(Math.random()));
   }
   return new Promise((resolve) => {
@@ -267,9 +274,121 @@ async function announce(events, result, spot) {
 
 function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-// Temporary stubs — replaced by real kicking (FG/punt/PAT) in the next task.
-async function runKick() { setMessage('(kick — next task)'); await wait(600); setTimeout(runDown, 300); }
-async function runPat() { setMessage('(PAT — next task)'); await wait(600); setTimeout(runDown, 300); }
+async function runKick(kind) {
+  const kicker = state.possession;
+  const key = kicker === 'home' ? 'a' : 'l';
+  const grade = isHuman(kicker)
+    ? await runTimingBar(key, kind === 'fieldgoal' ? 'Kick it through — hit the green!' : 'Punt — power up in the green!')
+    : aiPress();
+
+  if (kind === 'fieldgoal') {
+    const { good } = resolveFieldGoal({ ballOn: state.ballOn, goalLine: state.goalLine, accuracyGrade: grade });
+    if (good) {
+      state = addScore(state, kicker, 3);
+      render();
+      setMessage('Field goal is GOOD! (+3)');
+      await wait(900);
+      const winner = checkWin(state, config.target);
+      if (winner) return endGame(winner);
+      return startKickoff(kicker);
+    }
+    setMessage('Field goal is NO GOOD.');
+    await wait(900);
+    state = flipPossession(state, state.ballOn);
+    render();
+    return scheduleNext();
+  }
+
+  // punt
+  const { newBallOn } = resolvePunt({ ballOn: state.ballOn, direction: state.direction, powerGrade: grade });
+  setMessage('Punt away!');
+  await wait(700);
+  state = flipPossession(state, newBallOn);
+  render();
+  return scheduleNext();
+}
+
+function scheduleNext() { setTimeout(runDown, 500); }
+
+async function runPat() {
+  const kicker = state.possession;
+  const key = kicker === 'home' ? 'a' : 'l';
+  setMessage('Extra point attempt…');
+  const grade = isHuman(kicker)
+    ? await runTimingBar(key, 'Extra point — hit the green!')
+    : aiPress();
+  const { good } = resolvePat({ accuracyGrade: grade });
+  if (good) { state = addScore(state, kicker, 1); setMessage('Extra point GOOD! (+1)'); }
+  else setMessage('Extra point missed!');
+  render();
+  await wait(900);
+  const winner = checkWin(state, config.target);
+  if (winner) return endGame(winner);
+  return startKickoff(kicker);
+}
+
+// The scoring team (kicker) kicks off to the other team.
+async function startKickoff(kicker) {
+  const receiver = kicker === 'home' ? 'away' : 'home';
+  const choice = await chooseKickoff(kicker);
+
+  if (choice === 'onside') {
+    const key = kicker === 'home' ? 'a' : 'l';
+    setMessage('Onside kick!');
+    const grade = isHuman(kicker)
+      ? await runTimingBar(key, 'Recover it — nail the green!')
+      : aiPress();
+    const { recoveredByKicker } = resolveOnside({ recoveryGrade: grade });
+    const recoverYard = midfieldish(kicker);
+    if (recoveredByKicker) {
+      setMessage('Onside kick RECOVERED!');
+      setPossession(kicker, recoverYard);
+    } else {
+      setMessage('Onside kick recovered by the receiving team.');
+      setPossession(receiver, recoverYard);
+    }
+  } else {
+    // Regular kickoff: receiver takes over at their own 25.
+    setPossession(receiver, ownStart(receiver));
+  }
+  render();
+  await wait(900);
+  scheduleNext();
+}
+
+// Human kicker picks regular/onside; AI uses onsideDecision.
+function chooseKickoff(kicker) {
+  if (!isHuman(kicker)) {
+    const scoreDiff = (kicker === 'home' ? state.scoreHome - state.scoreAway : state.scoreAway - state.scoreHome);
+    const onside = onsideDecision({ scoreDiff, difficulty: config.difficulty, roll: Math.random() });
+    return Promise.resolve(onside ? 'onside' : 'regular');
+  }
+  return new Promise((resolve) => {
+    const menu = el('kickoff-choice');
+    menu.classList.remove('hidden');
+    function onClick(e) {
+      const kick = e.target.dataset.kick;
+      if (!kick) return;
+      menu.classList.add('hidden');
+      menu.removeEventListener('click', onClick);
+      resolve(kick);
+    }
+    menu.addEventListener('click', onClick);
+  });
+}
+
+// Set possession to `team` with the ball at `yard`, fresh 1st & 10.
+function setPossession(team, yard) {
+  const goals = offenseGoals(team);
+  state = {
+    ...state, possession: team, direction: goals.direction,
+    goalLine: goals.goalLine, ownGoal: goals.ownGoal, ballOn: yard, down: 1,
+    lineToGain: newLineToGain(yard, goals.direction, goals.goalLine),
+  };
+}
+
+function ownStart(team) { return team === 'home' ? 25 : 75; }     // own 25-yard line
+function midfieldish(kicker) { return kicker === 'home' ? 55 : 45; } // onside recovery spot near midfield
 
 // ---- Wiring ----
 el('start-btn').addEventListener('click', startGame);
