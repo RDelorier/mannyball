@@ -80,9 +80,16 @@ test('updateStats: a loss adds participation XP only', () => {
   assert.equal(after.xp, 50);
 });
 
-test('REWARD_TRACK covers levels 1..20 in order', () => {
-  assert.equal(REWARD_TRACK.length, 20);
+test('REWARD_TRACK covers levels 1..25 in order', () => {
+  assert.equal(REWARD_TRACK.length, 25);
   REWARD_TRACK.forEach((r, i) => assert.equal(r.level, i + 1));
+});
+
+test('the new tiers 21-25 unlock at their levels', () => {
+  assert.equal(teamById('rex').unlock.n, 22);
+  assert.ok(unlockedBalls({ xp: 250 * 20 }).map((b) => b.id).includes('eightball')); // Lv 21
+  assert.ok(unlockedFields({ xp: 250 * 22 }).map((f) => f.id).includes('lava'));      // Lv 23
+  assert.equal(currentTitle({ xp: 250 * 24 }), 'G.O.A.T.');                            // Lv 25
 });
 
 test('unlockedBalls/Fields always include the default and add by level', () => {

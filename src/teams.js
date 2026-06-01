@@ -18,6 +18,7 @@ export const TEAMS = [
   { id: 'joystick', emoji: '🕹️', name: 'Joysticks', unlock: { type: 'level', n: 12 } },
   { id: 'ghosts',   emoji: '👻', name: 'Ghosts',   unlock: { type: 'level', n: 14 } },
   { id: 'ufos',     emoji: '🛸', name: 'UFOs',     unlock: { type: 'level', n: 16 } },
+  { id: 'rex',      emoji: '🦖', name: 'Rex',      unlock: { type: 'level', n: 22 } },
 ];
 
 const XP_PER_LEVEL = 250;
@@ -101,6 +102,8 @@ export const BALL_SKINS = {
   fireball: { emoji: '🔥', name: 'Fireball' },
   rugby:    { emoji: '🏉', name: 'Rugby' },
   disco:    { emoji: '🪩', name: 'Disco' },
+  eightball: { emoji: '🎱', name: '8-Ball' },
+  diamond:  { emoji: '💎', name: 'Diamond' },
 };
 
 export const FIELD_THEMES = {
@@ -108,6 +111,7 @@ export const FIELD_THEMES = {
   night:   { name: 'Night' },
   sunset:  { name: 'Sunset' },
   ice:     { name: 'Ice' },
+  lava:    { name: 'Lava' },
 };
 
 export const REWARD_TRACK = [
@@ -131,6 +135,11 @@ export const REWARD_TRACK = [
   { level: 18, kind: 'field', value: 'ice',      emoji: '🧊', label: 'Field: Ice' },
   { level: 19, kind: 'ball',  value: 'disco',    emoji: '🪩', label: 'Ball: Disco' },
   { level: 20, kind: 'title', value: 'Legend',   emoji: '🏆', label: 'Title: Legend' },
+  { level: 21, kind: 'ball',  value: 'eightball', emoji: '🎱', label: 'Ball: 8-Ball' },
+  { level: 22, kind: 'team',  value: 'rex',      emoji: '🦖', label: 'Team: Rex' },
+  { level: 23, kind: 'field', value: 'lava',     emoji: '🌋', label: 'Field: Lava' },
+  { level: 24, kind: 'ball',  value: 'diamond',  emoji: '💎', label: 'Ball: Diamond' },
+  { level: 25, kind: 'title', value: 'G.O.A.T.', emoji: '🐐', label: 'Title: G.O.A.T.' },
 ];
 
 // Unlocked ball skins for the given progress (always includes the default).

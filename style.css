@@ -169,6 +169,12 @@ kbd {
 }
 #field.theme-ice { border-color: #eaf7ff; }
 #field.theme-ice .endzone { text-shadow: none; }
+#field.theme-lava #gridiron {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9.6%, rgba(255, 180, 80, 0.18) 9.6% 10%),
+    linear-gradient(180deg, #5a1502 0%, #2a0a01 100%);
+}
+#field.theme-lava { border-color: #ff6a00; box-shadow: 0 0 36px rgba(255, 106, 0, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.5); }
 
 #scoreboard {
   display: flex; justify-content: space-between; align-items: center;
