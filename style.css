@@ -381,3 +381,9 @@ body.extreme #game-status { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 59, 
 #win-xp { font-size: 1.25rem; font-weight: 700; color: var(--amber); text-shadow: 0 0 10px rgba(255, 210, 63, 0.5); margin-bottom: 10px; }
 #win-unlock { font-size: 1.2rem; font-weight: 700; color: var(--green); text-shadow: 0 0 10px rgba(57, 255, 20, 0.5); margin-bottom: 22px; }
 .win-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* Mobile: the badge would overlap the wrapped title, so flow it above instead. */
+@media (max-width: 600px) {
+  #bp-badge { position: static; display: inline-block; margin: 0 auto 16px; }
+  h1 { font-size: clamp(1.2rem, 7vw, 2rem); }
+}
