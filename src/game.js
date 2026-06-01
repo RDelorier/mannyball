@@ -515,7 +515,22 @@ function overthrow() {
   return wait(1000).then(() => ball.classList.remove('overthrow'));
 }
 
+// Occasionally the weather rolls in/out mid-game. Returns true if it changed.
+function maybeChangeWeather() {
+  const options = unlockedConditions(levelForXp(progress.xp));
+  if (options.length < 2) return false;        // only Clear unlocked → nothing to change to
+  if (Math.random() > 0.15) return false;       // ~15% chance per down
+  const pick = options[Math.floor(Math.random() * options.length)];
+  if (pick.id === config.condition) return false;
+  config.condition = pick.id;
+  applyCosmetics();
+  setMessage(`Weather change: ${pick.name}!`);
+  coachSay(`Weather's turning — ${pick.name.replace(/^\S+\s/, '')}!`, { interrupt: true });
+  return true;
+}
+
 async function runDown() {
+  if (maybeChangeWeather()) await wait(1300);
   const fourth = state.down === 4;
   const choice = await choosePlay(fourth);
   let result;
