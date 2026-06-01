@@ -330,6 +330,7 @@ function runTimingBar(key, hint) {
 
   marker.classList.remove('green', 'yellow', 'red');
   track.classList.remove('miss');
+  marker.style.transform = 'rotate(-90deg)'; // start at the left end so it doesn't jump
   bar.classList.remove('hidden');
 
   return new Promise((resolve) => {
