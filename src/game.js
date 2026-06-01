@@ -10,9 +10,7 @@ import { resolveFieldGoal, resolvePunt, resolvePat, resolveOnside } from './kick
 import { addScore, flipPossession } from './rules.js';
 import { fourthDownDecision, onsideDecision } from './ai.js';
 
-const FIELD_LEN = 100; // yard 0..100 maps across #gridiron width
 const SWEET = { center: 50, green: 9, yellow: 20 }; // percent-based sweet spot
-let activeTiming = null; // { key, resolve } while a bar is live
 
 // ---- DOM ----
 const el = (id) => document.getElementById(id);
@@ -60,6 +58,7 @@ function setMessage(text) {
 function render() {
   el('score-home').textContent = state.scoreHome;
   el('score-away').textContent = state.scoreAway;
+  el('target-line').textContent = `First to ${config.target}`;
   const toGoal = Math.abs(state.goalLine - state.ballOn);
   const dist = distanceToGain();
   const distLabel = dist >= toGoal ? 'Goal' : dist;
@@ -99,8 +98,8 @@ function runTimingBar(key, hint) {
   bar.querySelector('.timing-hint').textContent = hint;
 
   // Position the green zone from the SWEET config (percent across the track).
-  zone.style.left = (SWEET.center - SWEET.yellow) + '%';
-  zone.style.width = (SWEET.yellow * 2) + '%';
+  zone.style.left = (SWEET.center - SWEET.green) + '%';
+  zone.style.width = (SWEET.green * 2) + '%';
 
   bar.classList.remove('hidden');
 
@@ -114,7 +113,6 @@ function runTimingBar(key, hint) {
       cancelAnimationFrame(rafId);
       bar.classList.add('hidden');
       window.removeEventListener('keydown', onKey);
-      activeTiming = null;
       resolve(grade);
     }
 
@@ -132,7 +130,6 @@ function runTimingBar(key, hint) {
       rafId = requestAnimationFrame(frame);
     }
 
-    activeTiming = { key, resolve: finish };
     window.addEventListener('keydown', onKey);
     rafId = requestAnimationFrame(frame);
   });
@@ -150,9 +147,14 @@ function isHuman(team) {
   return config.mode === '2p' || team === 'home';
 }
 
+// Keyboard key a team uses for its timing presses.
+function teamKey(team) {
+  return team === 'home' ? 'a' : 'l';
+}
+
 // The key the offense uses for its own timing presses.
 function offenseKey() {
-  return state.possession === 'home' ? 'a' : 'l';
+  return teamKey(state.possession);
 }
 
 function defendingTeam() {
@@ -168,16 +170,16 @@ function rushDefenders() {
 }
 
 // Render defender markers on the field.
-function renderDefenders(yards) {
+function renderDefenders(yards, highlightIndex = -1) {
   const wrap = el('defenders');
   wrap.innerHTML = '';
-  for (const y of yards) {
+  yards.forEach((y, i) => {
     const div = document.createElement('div');
-    div.className = 'defender';
+    div.className = i === highlightIndex ? 'defender nearest' : 'defender';
     div.textContent = '🛡️';
     div.style.left = yardToPercent(y);
     wrap.appendChild(div);
-  }
+  });
 }
 
 async function playRush() {
@@ -205,11 +207,12 @@ async function playPass() {
   const clampedTarget = state.direction > 0
     ? Math.min(target, state.goalLine) : Math.max(target, state.goalLine);
   const defenders = [clampedTarget - state.direction * 4, clampedTarget + state.direction * 6];
-  renderDefenders([clampedTarget, ...defenders]);
+  // The defender nearest the receiver is the one the defending side controls.
+  const nearIdx = nearestDefender(clampedTarget, defenders);
+  renderDefenders([clampedTarget, ...defenders], nearIdx + 1); // +1: index 0 is the receiver
   setMessage('PASS!');
 
-  // The DEFENDING side contests with the nearest defender, always via SPACE.
-  nearestDefender(clampedTarget, defenders);
+  // The DEFENDING side contests with that nearest defender, always via SPACE.
   const defenseGrade = isHuman(defendingTeam())
     ? await runTimingBar(' ', 'Catch it — tap SPACE when the ball arrives!')
     : aiPress();
@@ -225,9 +228,10 @@ async function runDown() {
   const fourth = state.down === 4;
   const choice = await choosePlay(fourth);
   let result;
-  if (choice === 'rush') result = await playRush();
-  else if (choice === 'pass') result = await playPass();
-  else { await runKick(choice); return; } // fieldgoal/punt handled in the next task
+  if (choice === 'fieldgoal' || choice === 'punt') { await runKick(choice); return; }
+  // 'goforit' means run a normal play on 4th down; AI picks rush/pass.
+  const play = (choice === 'rush' || choice === 'pass') ? choice : callPlay(Math.random());
+  result = play === 'rush' ? await playRush() : await playPass();
 
   const spot = state.ballOn; // snapshot before applying, for the yardage message
   const { state: next, events } = applyDownResult(state, result);
@@ -237,7 +241,7 @@ async function runDown() {
 
   const winner = checkWin(state, config.target);
   if (winner) { endGame(winner); return; }
-  if (events.includes('touchdown')) { await runPat(); return; } // PAT in the next task
+  if (events.includes('touchdown')) { await runPat(); return; } // touchdown -> extra point
   setTimeout(runDown, 600);
 }
 
@@ -276,7 +280,7 @@ function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function runKick(kind) {
   const kicker = state.possession;
-  const key = kicker === 'home' ? 'a' : 'l';
+  const key = teamKey(kicker);
   const grade = isHuman(kicker)
     ? await runTimingBar(key, kind === 'fieldgoal' ? 'Kick it through — hit the green!' : 'Punt — power up in the green!')
     : aiPress();
@@ -312,7 +316,7 @@ function scheduleNext() { setTimeout(runDown, 500); }
 
 async function runPat() {
   const kicker = state.possession;
-  const key = kicker === 'home' ? 'a' : 'l';
+  const key = teamKey(kicker);
   setMessage('Extra point attempt…');
   const grade = isHuman(kicker)
     ? await runTimingBar(key, 'Extra point — hit the green!')
@@ -333,7 +337,7 @@ async function startKickoff(kicker) {
   const choice = await chooseKickoff(kicker);
 
   if (choice === 'onside') {
-    const key = kicker === 'home' ? 'a' : 'l';
+    const key = teamKey(kicker);
     setMessage('Onside kick!');
     const grade = isHuman(kicker)
       ? await runTimingBar(key, 'Recover it — nail the green!')
