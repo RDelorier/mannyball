@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  TEAMS, xpForGame, levelForXp, bpProgress, unlockLabel,
+  TEAMS, xpForGame, xpMultiplier, levelForXp, bpProgress, unlockLabel,
   isUnlocked, evaluateUnlocks, updateStats, newlyUnlocked, teamById,
   REWARD_TRACK, unlockedBalls, unlockedFields, currentTitle, newRewards,
 } from '../src/teams.js';
@@ -11,6 +11,19 @@ const ZERO = { wins: 0, hardWins: 0, highScore: 0, xp: 0 };
 test('xpForGame: base + win bonus + score', () => {
   assert.equal(xpForGame({ won: false, score: 0 }), 50);
   assert.equal(xpForGame({ won: true, score: 21 }), 171);
+});
+
+test('xpMultiplier: tougher AI pays more; 2p is base', () => {
+  assert.equal(xpMultiplier('2p', 'hard'), 1);
+  assert.equal(xpMultiplier('ai', 'easy'), 1);
+  assert.equal(xpMultiplier('ai', 'medium'), 1.5);
+  assert.equal(xpMultiplier('ai', 'hard'), 2);
+  assert.equal(xpMultiplier('ai', 'extreme'), 3);
+});
+
+test('xpForGame scales by the multiplier', () => {
+  assert.equal(xpForGame({ won: true, score: 21 }), 171);          // mult defaults to 1
+  assert.equal(xpForGame({ won: true, score: 21, mult: 3 }), 513); // EXTREME
 });
 
 test('levelForXp: 250 XP per level, starts at Lv 1', () => {

@@ -23,9 +23,15 @@ export const TEAMS = [
 
 const XP_PER_LEVEL = 250;
 
-// XP earned for a single finished game.
-export function xpForGame({ won, score }) {
-  return 50 + (won ? 100 : 0) + (score || 0);
+// XP earned for a single finished game (scaled by the game-mode multiplier).
+export function xpForGame({ won, score, mult = 1 }) {
+  return Math.round((50 + (won ? 100 : 0) + (score || 0)) * mult);
+}
+
+// XP multiplier by game mode: tougher AI difficulty pays more.
+export function xpMultiplier(mode, difficulty) {
+  if (mode === '2p') return 1;
+  return { easy: 1, medium: 1.5, hard: 2, extreme: 3 }[difficulty] || 1;
 }
 
 // Battle-pass level for a total XP amount (starts at Lv 1).
@@ -77,7 +83,7 @@ export function updateStats(progress, outcome) {
     wins: (progress.wins || 0) + (outcome.won ? 1 : 0),
     hardWins: (progress.hardWins || 0) + (outcome.won && outcome.hard ? 1 : 0),
     highScore: Math.max(progress.highScore || 0, outcome.won ? outcome.score : 0),
-    xp: (progress.xp || 0) + xpForGame({ won: outcome.won, score: outcome.won ? outcome.score : 0 }),
+    xp: (progress.xp || 0) + xpForGame({ won: outcome.won, score: outcome.won ? outcome.score : 0, mult: outcome.mult }),
   };
 }
 

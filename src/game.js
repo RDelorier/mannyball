@@ -9,7 +9,7 @@ import { resolveFieldGoal, resolvePunt, resolvePat, resolveOnside } from './kick
 import {
   TEAMS, teamById, isUnlocked, unlockLabel, bpProgress,
   updateStats, newlyUnlocked, levelForXp, xpForGame,
-  REWARD_TRACK, BALL_SKINS, unlockedBalls, unlockedFields, currentTitle, newRewards,
+  REWARD_TRACK, BALL_SKINS, unlockedBalls, unlockedFields, currentTitle, newRewards, xpMultiplier,
 } from './teams.js';
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 import { CONDITIONS, conditionById } from './conditions.js';
@@ -278,12 +278,14 @@ function endGame(winner) {
   const humanWon = config.mode === '2p' ? true : winner === config.humanSide;
   const winnerScore = winner === 'home' ? state.scoreHome : state.scoreAway;
   const before = progress;
+  const mult = xpMultiplier(config.mode, config.difficulty);
   const after = updateStats(before, {
     won: humanWon,
     hard: config.mode === 'ai' && (config.difficulty === 'hard' || config.difficulty === 'extreme'),
     score: winnerScore,
+    mult,
   });
-  const gained = xpForGame({ won: humanWon, score: humanWon ? winnerScore : 0 });
+  const gained = xpForGame({ won: humanWon, score: humanWon ? winnerScore : 0, mult });
   const teamUnlocks = newlyUnlocked(before, after).map((id) => {
     const t = teamById(id); return `${t.emoji} ${t.name}`;
   });
@@ -298,7 +300,7 @@ function endGame(winner) {
   el('win-heading').textContent = humanWon ? 'Well Done!' : 'Game Over';
   el('win-result').textContent =
     `${wTeam.emoji} ${wTeam.name} win — ${home.name} ${state.scoreHome} – ${state.scoreAway} ${away.name}`;
-  let xpText = `+${gained} XP`;
+  let xpText = `+${gained} XP${mult > 1 ? ` (×${mult})` : ''}`;
   if (leveledUp) xpText += ` — Level up! → Lv ${levelForXp(after.xp)}`;
   el('win-xp').textContent = xpText;
   const unlockEl = el('win-unlock');
