@@ -334,9 +334,10 @@ function runTimingBar(key, hint) {
   bar.classList.remove('hidden');
 
   return new Promise((resolve) => {
-    let pos = 0, dir = 1, rafId = 0, last = null;
-    // percent/second (BAR_SPEED was tuned per-frame at ~60fps), time-based for smoothness
+    let pos = 0, rafId = 0, start = null;
+    // percent/second (BAR_SPEED was tuned per-frame at ~60fps)
     const perSec = (BAR_SPEED[config.difficulty] || 1.4) * cond().barSpeedMult * 60;
+    const omega = Math.PI * perSec / 100; // pendulum rate matching the linear sweep speed
 
     function finish(grade) {
       cancelAnimationFrame(rafId);
@@ -358,13 +359,11 @@ function runTimingBar(key, hint) {
     }
 
     function frame(ts) {
-      if (last === null) last = ts;
-      const dt = Math.min((ts - last) / 1000, 0.05); // clamp big gaps (tab refocus)
-      last = ts;
-      pos += dir * perSec * dt;
-      if (pos >= 100) { pos = 100; dir = -1; }
-      if (pos <= 0) { pos = 0; dir = 1; }
-      marker.style.transform = `rotate(${(pos / 100) * 180 - 90}deg)`; // sweep across the arc
+      if (start === null) start = ts;
+      const t = (ts - start) / 1000;
+      // Smooth pendulum sweep 0..100: eases into each end instead of a hard bounce.
+      pos = 50 - 50 * Math.cos(omega * t);
+      marker.style.transform = `rotate(${(pos / 100) * 180 - 90}deg)`;
       rafId = requestAnimationFrame(frame);
     }
 
