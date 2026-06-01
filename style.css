@@ -217,15 +217,16 @@ kbd {
 
 #players { position: absolute; inset: 0; z-index: 1; transform-style: preserve-3d; }
 #players .player {
-  position: absolute; top: 50%; transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt)));
+  position: absolute; top: 50%; transform-origin: center bottom;
+  transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
   font-size: 1.5rem; opacity: 0.9; transition: left 0.4s ease;
 }
 #players .player.home { filter: drop-shadow(0 0 5px var(--home)); }
 #players .player.away { filter: drop-shadow(0 0 5px var(--away)); }
 
 #ball {
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt)));
+  position: absolute; top: 50%; left: 50%; transform-origin: center bottom;
+  transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
   font-size: 2.6rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));
   transition: left 0.4s ease; z-index: 3;
 }
@@ -235,10 +236,11 @@ kbd {
 }
 #defenders { transform-style: preserve-3d; }
 #defenders .defender {
-  position: absolute; top: 50%; transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt)));
+  position: absolute; top: 50%; transform-origin: center bottom;
+  transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
   font-size: 2rem; z-index: 2; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7));
 }
-#defenders .defender.nearest { transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt))) scale(1.4); filter: drop-shadow(0 0 8px var(--amber)); }
+#defenders .defender.nearest { transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt))) scale(1.4); filter: drop-shadow(0 0 8px var(--amber)); }
 #defenders .defender.rusher { filter: drop-shadow(0 0 8px var(--away)); }
 
 #message {
@@ -268,8 +270,8 @@ kbd {
 /* Overthrow: the ball sails up into the crowd. */
 #ball.overthrow { animation: overthrow 1s ease-out; }
 @keyframes overthrow {
-  0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
-  100% { transform: translate(-50%, -360%) rotate(540deg); opacity: 0; }
+  0% { transform: translate(-50%, -100%) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -460%) rotate(540deg); opacity: 0; }
 }
 
 /* ---- EXTREME mode flair ---- */
