@@ -14,7 +14,7 @@ import {
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 import { CONDITIONS, conditionById } from './conditions.js';
 
-const SWEET = { center: 50, green: 5, yellow: 20 }; // tight green window
+// Each timing bar gets a fresh randomized sweet spot (see randomSweet).
 
 // Timing-bar sweep speed (percent/frame) by difficulty — EXTREME is frantic.
 const BAR_SPEED = { easy: 1.2, medium: 1.4, hard: 1.8, extreme: 2.7 };
@@ -304,6 +304,14 @@ function endGame(winner) {
 }
 
 // ---- Timing-bar input engine ----
+// A fresh sweet spot each run: random position and size, always fully on track.
+function randomSweet() {
+  const green = 3 + Math.random() * 5;          // green half-width 3..8
+  const yellow = green + 6 + Math.random() * 9; // forgiving margin around green
+  const center = yellow + Math.random() * (100 - 2 * yellow);
+  return { center, green, yellow };
+}
+
 // Resolves with 'green' | 'yellow' | 'red'. `key` triggers the press ('a','l',' ').
 function runTimingBar(key, hint) {
   const bar = el('timing-bar');
@@ -312,9 +320,10 @@ function runTimingBar(key, hint) {
   const track = bar.querySelector('.bar-track');
   bar.querySelector('.timing-hint').textContent = hint;
 
-  // Visible green band matches the actual green grade window.
-  zone.style.left = (SWEET.center - SWEET.green) + '%';
-  zone.style.width = (SWEET.green * 2) + '%';
+  // Randomize the sweet spot's position and size for this press.
+  const sweet = randomSweet();
+  zone.style.left = (sweet.center - sweet.green) + '%';
+  zone.style.width = (sweet.green * 2) + '%';
 
   marker.classList.remove('green', 'yellow', 'red');
   track.classList.remove('miss');
@@ -340,7 +349,7 @@ function runTimingBar(key, hint) {
     function onKey(e) {
       if (e.key.toLowerCase() !== key) return;
       e.preventDefault();
-      finish(gradePress(pos, SWEET));
+      finish(gradePress(pos, sweet));
     }
 
     function frame() {
