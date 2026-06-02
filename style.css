@@ -16,7 +16,8 @@
   --line: rgba(57, 255, 20, 0.28);
   --display: 'Press Start 2P', 'Courier New', monospace;
   --body: 'Saira', system-ui, sans-serif;
-  --tilt: 24deg;          /* pseudo-3D field rake */
+  --tilt: 38deg;          /* pseudo-3D field rake */
+  --wall-h: 40px;         /* height of the standing stadium back wall */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,7 +145,7 @@ kbd {
 #game-screen {
   width: 100vw; max-width: none; height: 100vh; padding: 10px 16px;
   display: flex; flex-direction: column; gap: 8px; justify-content: flex-start;
-  perspective: 1100px; perspective-origin: 50% 40%;
+  perspective: 820px; perspective-origin: 50% 34%;
   touch-action: manipulation; -webkit-user-select: none; user-select: none;
 }
 #game-screen #message { margin: 24px 0 8px; }
@@ -229,11 +230,16 @@ kbd {
 #field {
   display: flex; flex: 1; min-height: 180px;
   border: 2px solid var(--green); border-radius: 8px;
-  box-shadow: 0 0 36px rgba(57, 255, 20, 0.28), inset 0 0 50px rgba(0, 0, 0, 0.55);
+  /* Stacked downward shadows give the field slab thickness, so it reads as a
+     raised stadium platform rather than a flat plane. */
+  box-shadow:
+    0 6px 0 #0a3a1c, 0 12px 0 #083016, 0 18px 0 #062810,
+    0 30px 44px rgba(0, 0, 0, 0.7),
+    0 0 36px rgba(57, 255, 20, 0.28), inset 0 0 50px rgba(0, 0, 0, 0.55);
   transform: rotateX(var(--tilt));
   transform-origin: center center;
   transform-style: preserve-3d;
-  margin: 6px 0;
+  margin: 10px 0 34px;
 }
 .endzone {
   width: 104px; position: relative; transform-style: preserve-3d;
@@ -259,6 +265,8 @@ kbd {
 .goalpost .up.right { right: 6px; }
 .goalpost .cross { left: 6px; right: 6px; top: 40px; height: 4px; }
 .goalpost .pole { left: 50%; transform: translateX(-50%); top: 40px; width: 4px; height: 26px; }
+/* End zones read as raised blocks via a downward extrusion shadow. */
+.home-zone, .away-zone { box-shadow: 0 8px 0 rgba(0, 0, 0, 0.45), inset 0 2px 0 rgba(255, 255, 255, 0.12); }
 .home-zone { background: linear-gradient(180deg, #0e3f6b, #0a2a48); color: #aee3ff; }
 .away-zone { background: linear-gradient(180deg, #6b1326, #481018); color: #ffc2cd; }
 
@@ -275,6 +283,16 @@ kbd {
   background: rgba(57, 255, 20, 0.35); transform: translateX(-50%);
 }
 #gridiron { transform-style: preserve-3d; }
+/* Standing stadium back wall: a strip at the far edge folded up vertically
+   out of the field plane (preserve-3d), so it rises behind the action. */
+#gridiron::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0;
+  height: var(--wall-h); z-index: 0;
+  transform-origin: top center; transform: rotateX(-90deg);
+  background: linear-gradient(180deg, #0c2c18 0%, #061a0e 100%);
+  border-bottom: 2px solid var(--line);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(57, 255, 20, 0.15);
+}
 
 /* ---- Weather / field conditions overlay ---- */
 #weather { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
@@ -306,13 +324,13 @@ kbd {
   transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
   font-size: 1.5rem; opacity: 0.9; transition: left 0.4s ease;
 }
-#players .player.home { filter: drop-shadow(0 0 5px var(--home)); }
-#players .player.away { filter: drop-shadow(0 0 5px var(--away)); }
+#players .player.home { filter: drop-shadow(0 0 5px var(--home)) drop-shadow(0 6px 3px rgba(0, 0, 0, 0.55)); }
+#players .player.away { filter: drop-shadow(0 0 5px var(--away)) drop-shadow(0 6px 3px rgba(0, 0, 0, 0.55)); }
 
 #ball {
   position: absolute; top: 50%; left: 50%; transform-origin: center bottom;
   transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
-  font-size: 2.6rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));
+  font-size: 2.6rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65)) drop-shadow(0 7px 4px rgba(0, 0, 0, 0.6));
   transition: left 0.4s ease; z-index: 3;
 }
 #firstdown-line {
@@ -323,7 +341,7 @@ kbd {
 #defenders .defender {
   position: absolute; top: 50%; transform-origin: center bottom;
   transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
-  font-size: 2rem; z-index: 2; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7));
+  font-size: 2rem; z-index: 2; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 6px 3px rgba(0, 0, 0, 0.55));
 }
 #defenders .defender.nearest { transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt))) scale(1.4); filter: drop-shadow(0 0 8px var(--amber)); }
 #defenders .defender.rusher { filter: drop-shadow(0 0 8px var(--away)); }
