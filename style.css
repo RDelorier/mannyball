@@ -318,6 +318,42 @@ kbd {
 @keyframes wx-wind { from { background-position: 0 0; } to { background-position: 130px 0; } }
 #weather.fog { background: linear-gradient(rgba(225, 228, 235, 0.22), rgba(210, 214, 224, 0.34)); backdrop-filter: blur(1.5px); }
 
+/* Thunderstorm: driving rain with periodic lightning flashes. */
+#weather.storm {
+  background-image: repeating-linear-gradient(108deg, rgba(180, 205, 255, 0.5) 0 1px, transparent 1px 6px);
+  animation: wx-rain 0.3s linear infinite, wx-lightning 5s steps(1, end) infinite;
+}
+@keyframes wx-lightning {
+  0%, 92%, 100% { background-color: transparent; }
+  93%, 96% { background-color: rgba(255, 255, 255, 0.55); }
+  94% { background-color: transparent; }
+}
+/* Heat: shimmering haze rising off the turf. */
+#weather.heat {
+  background: linear-gradient(0deg, rgba(255, 170, 90, 0.18), transparent 60%);
+  backdrop-filter: blur(0.6px); animation: wx-heat 2.2s ease-in-out infinite;
+}
+@keyframes wx-heat { 0%, 100% { transform: translateY(0); opacity: 0.85; } 50% { transform: translateY(-3px); opacity: 1; } }
+/* Hail: small ice pellets falling fast. */
+#weather.hail {
+  background-image:
+    radial-gradient(2px 2px at 15% 10%, #eaf7ff 60%, transparent 61%),
+    radial-gradient(2px 2px at 50% 30%, #eaf7ff 60%, transparent 61%),
+    radial-gradient(3px 3px at 78% 55%, #fff 60%, transparent 61%),
+    radial-gradient(2px 2px at 32% 70%, #dff2ff 60%, transparent 61%);
+  background-size: 110px 110px;
+  animation: wx-hail 0.55s linear infinite;
+}
+@keyframes wx-hail { from { background-position: 0 0; } to { background-position: -18px 130px; } }
+/* Tornado: a swirling vortex sweeping across the field. */
+#weather.tornado {
+  background:
+    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.08) 0 24px, transparent 24px 70px),
+    radial-gradient(closest-side at 50% 55%, rgba(120, 120, 130, 0.45), rgba(90, 90, 100, 0.18) 60%, transparent 72%);
+  animation: wx-wind 0.5s linear infinite, wx-twist 3s ease-in-out infinite;
+}
+@keyframes wx-twist { 0%, 100% { background-position: 0 0, 40% 50%; } 50% { background-position: 70px 0, 60% 50%; } }
+
 #players { position: absolute; inset: 0; z-index: 1; transform-style: preserve-3d; }
 #players .player {
   position: absolute; top: 50%; transform-origin: center bottom;

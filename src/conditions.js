@@ -10,6 +10,10 @@ export const CONDITIONS = [
   { id: 'wind',  name: '💨 Wind',  fgMaxRange: 38, barSpeedMult: 1.0,  overlay: 'wind', dropChance: 0.18 },
   { id: 'snow',  name: '❄️ Snow',  fgMaxRange: 45, barSpeedMult: 1.1,  overlay: 'snow', dropChance: 0.38 },
   { id: 'fog',   name: '🌫️ Fog',   fgMaxRange: 48, barSpeedMult: 1.15, overlay: 'fog',  dropChance: 0.25 },
+  { id: 'storm', name: '🌩️ Thunderstorm', fgMaxRange: 42, barSpeedMult: 1.35, overlay: 'storm',   dropChance: 0.45 },
+  { id: 'heat',  name: '🥵 Heat',  fgMaxRange: 53, barSpeedMult: 1.1,  overlay: 'heat',    dropChance: 0.05 },
+  { id: 'hail',  name: '🧊 Hail',  fgMaxRange: 40, barSpeedMult: 1.2,  overlay: 'hail',    dropChance: 0.4 },
+  { id: 'tornado', name: '🌪️ Tornado', fgMaxRange: 30, barSpeedMult: 1.45, overlay: 'tornado', dropChance: 0.5 },
 ];
 
 export function conditionById(id) {
