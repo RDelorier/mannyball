@@ -76,24 +76,28 @@
     </div>
     <div id="target-line">First to —</div>
 
-    <div id="field">
-      <div class="endzone home-zone">
-        <div class="goalpost"><span class="up left"></span><span class="up right"></span><span class="cross"></span><span class="pole"></span></div>
-        <div class="logo" id="logo-home">🏈</div>
-        <span class="zone-name" id="endzone-home">HOME</span>
+    <div id="field-wrap">
+      <div id="field">
+        <div class="endzone home-zone">
+          <div class="goalpost"><span class="up left"></span><span class="up right"></span><span class="cross"></span><span class="pole"></span></div>
+          <div class="logo" id="logo-home">🏈</div>
+          <span class="zone-name" id="endzone-home">HOME</span>
+        </div>
+        <div id="gridiron">
+          <div id="players"></div>
+          <div id="ball">🏈</div>
+          <div id="defenders"></div>
+          <div id="firstdown-line"></div>
+        </div>
+        <div class="endzone away-zone">
+          <div class="goalpost"><span class="up left"></span><span class="up right"></span><span class="cross"></span><span class="pole"></span></div>
+          <div class="logo" id="logo-away">🏈</div>
+          <span class="zone-name" id="endzone-away">AWAY</span>
+        </div>
       </div>
-      <div id="gridiron">
-        <div id="weather"></div>
-        <div id="players"></div>
-        <div id="ball">🏈</div>
-        <div id="defenders"></div>
-        <div id="firstdown-line"></div>
-      </div>
-      <div class="endzone away-zone">
-        <div class="goalpost"><span class="up left"></span><span class="up right"></span><span class="cross"></span><span class="pole"></span></div>
-        <div class="logo" id="logo-away">🏈</div>
-        <span class="zone-name" id="endzone-away">AWAY</span>
-      </div>
+      <!-- Weather is a FLAT overlay outside the field's 3D context, so its texture
+           is rasterized once and only slid across (no per-frame re-projection). -->
+      <div id="weather"></div>
     </div>
 
     <div id="message"></div>
@@ -111,10 +115,7 @@
     </div>
 
     <div id="timing-bar" class="hidden">
-      <div class="bar-track">
-        <div class="sweet-zone"></div>
-        <div class="bar-marker"></div>
-      </div>
+      <canvas id="bar-canvas" width="300" height="150"></canvas>
       <p class="timing-hint">Press your key in the green!</p>
     </div>
   </section>

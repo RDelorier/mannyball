@@ -40,6 +40,23 @@ test('a good throw still resolves on the defense grade', () => {
   assert.equal(r.outcome, 'completion');
 });
 
+test('a perfect (green) throw beats tight (yellow) coverage for a completion', () => {
+  const r = resolvePass({ ...base, throwGrade: 'green', defenseGrade: 'yellow' });
+  assert.deepEqual(r, { outcome: 'completion', endYard: 75, touchdown: false, turnover: false });
+});
+
+test('a perfect throw vs great (green) coverage is broken up, not picked off', () => {
+  const r = resolvePass({ ...base, throwGrade: 'green', defenseGrade: 'green' });
+  assert.equal(r.outcome, 'incomplete');
+  assert.equal(r.turnover, false);
+});
+
+test('weather can still drop a perfect throw that beat yellow coverage', () => {
+  const r = resolvePass({ ...base, throwGrade: 'green', defenseGrade: 'yellow', dropChance: 0.5, dropRoll: 0.1 });
+  assert.equal(r.outcome, 'incomplete');
+  assert.equal(r.dropped, true);
+});
+
 test('a blown block (red rush) is a sack for a 7-yard loss', () => {
   const r = resolvePass({ startYard: 50, targetYard: 70, goalLine: 100, ownGoal: 0, direction: 1, rushGrade: 'red' });
   assert.deepEqual(r, { outcome: 'sack', endYard: 43, touchdown: false, turnover: false });

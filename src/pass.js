@@ -35,11 +35,16 @@ export function resolvePass({
   }
   // Weather can knock a catch loose (turning a catch/pick into an incompletion).
   const dropped = dropRoll < dropChance;
+  // A perfectly-timed (green) throw is placed where only the receiver can get it:
+  // it beats tight (yellow) coverage for a completion, and on a jump ball against
+  // great (green) coverage it's broken up rather than picked off — no turnover.
+  const perfectThrow = throwGrade === 'green';
   if (defenseGrade === 'green') {
     if (dropped) return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false, dropped: true };
+    if (perfectThrow) return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false };
     return { outcome: 'interception', endYard: targetYard, touchdown: false, turnover: true };
   }
-  if (defenseGrade === 'yellow') {
+  if (defenseGrade === 'yellow' && !perfectThrow) {
     return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false };
   }
   if (dropped) return { outcome: 'incomplete', endYard: startYard, touchdown: false, turnover: false, dropped: true };

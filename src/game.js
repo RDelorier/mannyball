@@ -1,6 +1,7 @@
 import { offenseGoals, newLineToGain, checkWin } from './rules.js';
 import { unlockAudio, playCrowdRoar } from './sound.js';
-import { gradePress } from './timing.js';
+import { gradePress, pressCounts } from './timing.js';
+import { emojiSprite } from './sprites.js';
 import { aiTimingGrade, aiPassDefenseGrade, callPlay, fourthDownDecision, onsideDecision } from './ai.js';
 import { resolveRush } from './rush.js';
 import { nearestDefender, resolvePass } from './pass.js';
@@ -264,18 +265,32 @@ function render() {
 
 // Persistent formation: offense teammates behind the ball, defenders ahead of it,
 // each colored by their side. Sits behind the ball and the active play markers.
+// Read a theme color (e.g. '--home') as a concrete value for canvas shadows.
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#fff';
+const CONTACT = { color: 'rgba(0, 0, 0, 0.55)', blur: 3, dy: 6 }; // shared dark drop
+
+// Build (cached) sprites for each actor, with the same shadows the CSS used to
+// apply as filters. Place a baked <img> sprite onto the field, glyph feet on the
+// (left%, vertical-center) spot — anchorBottom nudges for the bitmap's padding.
+function placeActor(wrap, yard, cls, sprite) {
+  if (yard < 0 || yard > 100) return;
+  const img = document.createElement('img');
+  img.className = cls;
+  img.src = sprite.url;
+  img.style.width = sprite.w + 'px';
+  img.style.height = sprite.h + 'px';
+  img.style.left = yardToPercent(yard);
+  img.style.setProperty('--anchor', sprite.anchorBottom + 'px');
+  wrap.appendChild(img);
+}
+
 function renderPlayers() {
   const wrap = el('players');
   wrap.innerHTML = '';
   const d = state.direction;
-  const add = (yard, emoji, side) => {
-    if (yard < 0 || yard > 100) return;
-    const div = document.createElement('div');
-    div.className = `player ${side}`;
-    div.textContent = emoji;
-    div.style.left = yardToPercent(yard);
-    wrap.appendChild(div);
-  };
+  const sprite = (emoji, side) =>
+    emojiSprite(emoji, { size: 24, shadows: [{ color: cssVar(side === 'home' ? '--home' : '--away'), blur: 5 }, CONTACT] });
+  const add = (yard, emoji, side) => placeActor(wrap, yard, `player ${side}`, sprite(emoji, side));
   // Offense (with the ball) lines up behind the spot; defense spreads ahead.
   [d * 3, d * 7].forEach((off) => add(state.ballOn - off, '🏃', state.possession));
   [d * 9, d * 16].forEach((off) => add(state.ballOn + off, '🧍', defendingTeam()));
@@ -380,66 +395,114 @@ function randomSweet() {
 // Resolves with 'green' | 'yellow' | 'red'. `key` triggers the press ('a','l',' ').
 function runTimingBar(key, hint) {
   const bar = el('timing-bar');
-  const marker = bar.querySelector('.bar-marker');
-  const zone = bar.querySelector('.sweet-zone');
-  const track = bar.querySelector('.bar-track');
+  const canvas = el('bar-canvas');
   bar.querySelector('.timing-hint').textContent = hint + ' (or tap)';
 
-  // Randomize the sweet spot's position and size for this press, drawn as a
-  // green wedge on the arc (0..100 maps to 0..180deg of the semicircle).
+  // Randomize the sweet spot's position and size for this press (0..100 maps to
+  // the 180deg arc). Drawn as a green band on the canvas below.
   const sweet = randomSweet();
-  const cone = (v) => (v / 100) * 180;
-  const a1 = Math.max(0, cone(sweet.center) - cone(sweet.green));
-  const a2 = Math.min(180, cone(sweet.center) + cone(sweet.green));
-  zone.style.background = `conic-gradient(from -90deg at 50% 100%, transparent 0 ${a1}deg, rgba(46,204,64,0.85) ${a1}deg ${a2}deg, transparent ${a2}deg)`;
-
-  marker.classList.remove('green', 'yellow', 'red');
-  track.classList.remove('miss');
-  marker.style.transform = 'rotate(-90deg)'; // start at the left end so it doesn't jump
   bar.classList.remove('hidden');
+  // Freeze the weather overlay while the bar sweeps. Under software rendering
+  // (no GPU) the moving precipitation layers repaint on the main thread every
+  // frame and starve the needle's rAF loop, making the bar stutter. A still
+  // weather layer for the ~2s press window keeps the needle perfectly smooth.
+  document.body.classList.add('timing-active');
+
+  // Draw the whole bar on a <canvas> with cheap vector ops each frame, instead
+  // of rotating a DOM needle over a masked/filtered arc. The old approach forced
+  // the browser to re-rasterize expensive masked content every frame, which
+  // skipped badly under software rendering (no GPU). A few canvas strokes are
+  // cheap to repaint in software OR on the GPU, so the sweep stays smooth.
+  const W = 300, H = 150, CX = 150, CY = 150, R = 124, RING = 30;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(W * dpr)) {
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+  }
+  // pos 0..100 -> angle across the TOP semicircle (left -> up -> right).
+  const ang = (p) => Math.PI + (p / 100) * Math.PI;
 
   return new Promise((resolve) => {
-    let pos = 0, rafId = 0, start = null;
     // percent/second (BAR_SPEED was tuned per-frame at ~60fps)
     const perSec = (BAR_SPEED[config.difficulty] || 1.4) * cond().barSpeedMult * 60;
-    const omega = Math.PI * perSec / 100; // pendulum rate matching the linear sweep speed
+    const crossMs = (100 / perSec) * 1000; // time to sweep the arc once, end to end
+    let startTs = null, rafId = 0, pos = 0;
 
-    function finish(grade) {
+    function draw(needleColor) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      ctx.lineCap = 'butt';
+      // Neutral arc track + green sweet band (cheap thin-ish strokes).
+      ctx.lineWidth = RING;
+      ctx.strokeStyle = 'rgba(220, 255, 230, 0.22)';
+      ctx.beginPath(); ctx.arc(CX, CY, R, Math.PI, 2 * Math.PI); ctx.stroke();
+      ctx.strokeStyle = 'rgba(46, 204, 64, 0.9)';
+      ctx.beginPath(); ctx.arc(CX, CY, R, ang(sweet.center - sweet.green), ang(sweet.center + sweet.green)); ctx.stroke();
+      // White needle (or grade color once pressed). No shadowBlur — that is a
+      // per-pixel blur every frame, the exact cost we're avoiding.
+      const a = ang(pos);
+      const inner = R - RING / 2 - 6, outer = R + RING / 2 + 2;
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = needleColor || '#fff';
+      ctx.beginPath();
+      ctx.moveTo(CX + inner * Math.cos(a), CY + inner * Math.sin(a));
+      ctx.lineTo(CX + outer * Math.cos(a), CY + outer * Math.sin(a));
+      ctx.stroke();
+    }
+
+    // Live needle position: a constant-velocity triangle wave from the clock.
+    // Uniform speed is far easier to time than the old cosine pendulum.
+    const currentPos = () => {
+      if (startTs === null) return 0;
+      const c = (performance.now() - startTs) % (2 * crossMs);
+      return (c <= crossMs ? c : 2 * crossMs - c) / crossMs * 100;
+    };
+
+    function finish(p) {
       cancelAnimationFrame(rafId);
       window.removeEventListener('keydown', onKey);
       TAP_EVENTS.forEach((ev) => gameScreen.removeEventListener(ev, onTap));
-      marker.classList.add(grade);               // green | yellow | red
-      if (grade === 'red') track.classList.add('miss'); // dark-red flash on a really bad press
+      pos = p;
+      const grade = gradePress(p, sweet);
+      const color = grade === 'green' ? '#2ecc40' : grade === 'yellow' ? '#ffd23f' : '#ff3b3b';
+      draw(color); // freeze the needle where they pressed, colored by grade
+      document.body.classList.remove('timing-active'); // resume weather motion
       setTimeout(() => {
         bar.classList.add('hidden');
-        marker.classList.remove('green', 'yellow', 'red');
-        track.classList.remove('miss');
         resolve(grade);
       }, 260);
     }
 
+    function frame(ts) {
+      if (startTs === null) startTs = ts;
+      pos = currentPos();
+      draw();
+      rafId = requestAnimationFrame(frame);
+    }
+
+    // When the bar started accepting input — used to reject leaked/stale presses
+    // (ghost mouse events or held-key auto-repeat) from the previous timing bar.
+    const openedAt = performance.now();
+
     function onKey(e) {
       if (e.key.toLowerCase() !== key) return;
+      if (!pressCounts({ elapsedMs: performance.now() - openedAt, isRepeat: e.repeat })) return;
       e.preventDefault();
-      finish(gradePress(pos, sweet));
+      finish(currentPos());
     }
 
     // Touch / mouse: tapping anywhere registers the press (mobile-friendly).
     let tapped = false;
     function onTap(e) {
       if (tapped) return;       // guard against pointer+touch+mouse all firing
+      if (!pressCounts({ elapsedMs: performance.now() - openedAt })) return; // ignore leaked taps
       tapped = true;
       if (e.cancelable) e.preventDefault();
-      finish(gradePress(pos, sweet));
-    }
-
-    function frame(ts) {
-      if (start === null) start = ts;
-      const t = (ts - start) / 1000;
-      // Smooth pendulum sweep 0..100: eases into each end instead of a hard bounce.
-      pos = 50 - 50 * Math.cos(omega * t);
-      marker.style.transform = `rotate(${(pos / 100) * 180 - 90}deg)`;
-      rafId = requestAnimationFrame(frame);
+      finish(currentPos());
     }
 
     window.addEventListener('keydown', onKey);
@@ -484,12 +547,11 @@ function rushDefenders() {
 function renderDefenders(yards, highlightIndex = -1) {
   const wrap = el('defenders');
   wrap.innerHTML = '';
+  const base = emojiSprite('🛡️', { size: 32, shadows: [{ color: 'rgba(0, 0, 0, 0.7)', blur: 4 }, CONTACT] });
+  const near = emojiSprite('🛡️', { size: 32, shadows: [{ color: cssVar('--amber'), blur: 8 }] });
   yards.forEach((y, i) => {
-    const div = document.createElement('div');
-    div.className = i === highlightIndex ? 'defender nearest' : 'defender';
-    div.textContent = '🛡️';
-    div.style.left = yardToPercent(y);
-    wrap.appendChild(div);
+    const nearest = i === highlightIndex;
+    placeActor(wrap, y, nearest ? 'defender nearest' : 'defender', nearest ? near : base);
   });
 }
 
@@ -517,13 +579,8 @@ async function playRush() {
 function renderRushers(yards) {
   const wrap = el('defenders');
   wrap.innerHTML = '';
-  for (const y of yards) {
-    const div = document.createElement('div');
-    div.className = 'defender rusher';
-    div.textContent = '😤';
-    div.style.left = yardToPercent(y);
-    wrap.appendChild(div);
-  }
+  const sprite = emojiSprite('😤', { size: 32, shadows: [{ color: cssVar('--away'), blur: 8 }] });
+  for (const y of yards) placeActor(wrap, y, 'defender rusher', sprite);
 }
 
 async function playPass() {

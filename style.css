@@ -35,15 +35,21 @@ body {
   overflow-x: hidden;
 }
 
-/* CRT scanlines + vignette, sitting above the page but click-through. */
+/* CRT scanlines + vignette, sitting above the page but click-through.
+   These are STATIC. translateZ(0) forces each onto its own GPU layer so they're
+   rasterized once and never repainted when the field/timing-bar animates beneath
+   them. (mix-blend-mode is intentionally avoided: a full-screen blend layer can't
+   be cached and forces a whole-screen re-composite on every animation frame. For
+   a pure-black overlay, normal alpha is mathematically identical to multiply.) */
 body::before {
   content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
-  mix-blend-mode: multiply;
+  transform: translateZ(0);
 }
 body::after {
   content: ''; position: fixed; inset: 0; z-index: 9998; pointer-events: none;
   box-shadow: inset 0 0 180px rgba(0, 0, 0, 0.85);
+  transform: translateZ(0);
 }
 
 .screen {
@@ -145,7 +151,6 @@ kbd {
 #game-screen {
   width: 100vw; max-width: none; height: 100vh; padding: 10px 16px;
   display: flex; flex-direction: column; gap: 8px; justify-content: flex-start;
-  perspective: 820px; perspective-origin: 50% 34%;
   touch-action: manipulation; -webkit-user-select: none; user-select: none;
 }
 #game-screen #message { margin: 24px 0 8px; }
@@ -227,6 +232,14 @@ kbd {
 #target-line { font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 14px; position: relative; z-index: 5; }
 
 /* ---- Field ---- */
+/* The wrapper holds the perspective (it must sit on the field's DIRECT parent) and
+   is the positioning context for the flat #weather overlay. It is a plain flat
+   container — NOT preserve-3d — so the overlay composites cheaply in 2D. */
+#field-wrap {
+  position: relative; display: flex; flex: 1; min-height: 180px;
+  margin: 10px 0 34px;
+  perspective: 820px; perspective-origin: 50% 34%;
+}
 #field {
   display: flex; flex: 1; min-height: 180px;
   border: 2px solid var(--green); border-radius: 8px;
@@ -239,7 +252,6 @@ kbd {
   transform: rotateX(var(--tilt));
   transform-origin: center center;
   transform-style: preserve-3d;
-  margin: 10px 0 34px;
 }
 .endzone {
   width: 104px; position: relative; transform-style: preserve-3d;
@@ -294,14 +306,41 @@ kbd {
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(57, 255, 20, 0.15);
 }
 
-/* ---- Weather / field conditions overlay ---- */
-#weather { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-#weather.rain {
+/* ---- Weather / field conditions overlay ----
+   #weather is a FLAT 2D layer that overlays the field but lives OUTSIDE its 3D
+   perspective context (see #field-wrap). That's the whole trick: a flat overlay's
+   texture is rasterized ONCE and a `transform` just slides the cached bitmap
+   across — no per-frame repaint and no per-frame perspective re-projection (the
+   old in-field overlay re-rasterized the projected gradient every frame).
+   backdrop-filter (a per-frame full re-blur) has been removed. */
+#weather { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; border-radius: 8px; }
+
+/* While the timing bar is sweeping, halt all weather animation so its main-thread
+   repaints (costly under software rendering) don't starve the needle's rAF loop. */
+body.timing-active #weather,
+body.timing-active #weather::before { animation-play-state: paused !important; }
+
+/* Shared moving precipitation/streak layer: a static texture in its own composited
+   layer, oversized only along the axis it slides so the moving edge never shows
+   while the off-axis (and thus the rasterized area) stays small. Falling weather
+   needs vertical slack; wind/tornado need horizontal slack. */
+#weather.rain::before, #weather.snow::before,
+#weather.hail::before, #weather.storm::before {
+  content: ''; position: absolute; top: -150px; bottom: -150px; left: -60px; right: -60px;
+  will-change: transform; backface-visibility: hidden;
+}
+#weather.wind::before, #weather.tornado::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -150px; right: -150px;
+  will-change: transform; backface-visibility: hidden;
+}
+
+#weather.rain::before {
   background-image: repeating-linear-gradient(105deg, rgba(180, 205, 255, 0.4) 0 1px, transparent 1px 8px);
   animation: wx-rain 0.4s linear infinite;
 }
-@keyframes wx-rain { from { background-position: 0 0; } to { background-position: -44px 130px; } }
-#weather.snow {
+@keyframes wx-rain { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-44px, 130px, 0); } }
+
+#weather.snow::before {
   background-image:
     radial-gradient(2px 2px at 20% 10%, #fff 60%, transparent 61%),
     radial-gradient(2px 2px at 55% 30%, #fff 60%, transparent 61%),
@@ -310,32 +349,15 @@ kbd {
   background-size: 130px 130px;
   animation: wx-snow 3.5s linear infinite;
 }
-@keyframes wx-snow { from { background-position: 0 0; } to { background-position: 12px 130px; } }
-#weather.wind {
+@keyframes wx-snow { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(12px, 130px, 0); } }
+
+#weather.wind::before {
   background-image: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.07) 0 30px, transparent 30px 90px);
   animation: wx-wind 0.8s linear infinite;
 }
-@keyframes wx-wind { from { background-position: 0 0; } to { background-position: 130px 0; } }
-#weather.fog { background: linear-gradient(rgba(225, 228, 235, 0.22), rgba(210, 214, 224, 0.34)); backdrop-filter: blur(1.5px); }
+@keyframes wx-wind { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(130px, 0, 0); } }
 
-/* Thunderstorm: driving rain with periodic lightning flashes. */
-#weather.storm {
-  background-image: repeating-linear-gradient(108deg, rgba(180, 205, 255, 0.5) 0 1px, transparent 1px 6px);
-  animation: wx-rain 0.3s linear infinite, wx-lightning 5s steps(1, end) infinite;
-}
-@keyframes wx-lightning {
-  0%, 92%, 100% { background-color: transparent; }
-  93%, 96% { background-color: rgba(255, 255, 255, 0.55); }
-  94% { background-color: transparent; }
-}
-/* Heat: shimmering haze rising off the turf. */
-#weather.heat {
-  background: linear-gradient(0deg, rgba(255, 170, 90, 0.18), transparent 60%);
-  backdrop-filter: blur(0.6px); animation: wx-heat 2.2s ease-in-out infinite;
-}
-@keyframes wx-heat { 0%, 100% { transform: translateY(0); opacity: 0.85; } 50% { transform: translateY(-3px); opacity: 1; } }
-/* Hail: small ice pellets falling fast. */
-#weather.hail {
+#weather.hail::before {
   background-image:
     radial-gradient(2px 2px at 15% 10%, #eaf7ff 60%, transparent 61%),
     radial-gradient(2px 2px at 50% 30%, #eaf7ff 60%, transparent 61%),
@@ -344,29 +366,58 @@ kbd {
   background-size: 110px 110px;
   animation: wx-hail 0.55s linear infinite;
 }
-@keyframes wx-hail { from { background-position: 0 0; } to { background-position: -18px 130px; } }
-/* Tornado: a swirling vortex sweeping across the field. */
-#weather.tornado {
-  background:
-    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.08) 0 24px, transparent 24px 70px),
-    radial-gradient(closest-side at 50% 55%, rgba(120, 120, 130, 0.45), rgba(90, 90, 100, 0.18) 60%, transparent 72%);
-  animation: wx-wind 0.5s linear infinite, wx-twist 3s ease-in-out infinite;
+@keyframes wx-hail { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-18px, 130px, 0); } }
+
+/* Fog: static translucent haze (blur dropped). */
+#weather.fog { background: linear-gradient(rgba(225, 228, 235, 0.26), rgba(210, 214, 224, 0.4)); }
+
+/* Thunderstorm: driving rain (moving layer) + periodic lightning. The flash uses
+   steps() so it only repaints on the handful of flash transitions, not per-frame. */
+#weather.storm::before {
+  background-image: repeating-linear-gradient(108deg, rgba(180, 205, 255, 0.4) 0 1px, transparent 1px 8px);
+  animation: wx-rain 0.4s linear infinite;
 }
-@keyframes wx-twist { 0%, 100% { background-position: 0 0, 40% 50%; } 50% { background-position: 70px 0, 60% 50%; } }
+/* Lightning: a single brief, gentle flash per cycle — enough to read as a storm
+   without washing out the field (was a 0.55 double-flash that obscured the play). */
+#weather.storm { animation: wx-lightning 7s steps(1, end) infinite; }
+@keyframes wx-lightning {
+  0%, 95%, 100% { background-color: transparent; }
+  96%, 97% { background-color: rgba(255, 255, 255, 0.22); }
+}
+
+/* Heat: shimmering haze rising off the turf — transform/opacity only (compositor),
+   blur dropped. */
+#weather.heat {
+  background: linear-gradient(0deg, rgba(255, 170, 90, 0.2), transparent 60%);
+  animation: wx-heat 2.2s ease-in-out infinite; will-change: transform;
+}
+@keyframes wx-heat { 0%, 100% { transform: translateY(0); opacity: 0.85; } 50% { transform: translateY(-3px); opacity: 1; } }
+
+/* Tornado: static vortex + drifting wind streaks. The 140px slide is two full
+   70px tiles, so each loop is seamless. */
+#weather.tornado {
+  background: radial-gradient(closest-side at 50% 55%, rgba(120, 120, 130, 0.4), rgba(90, 90, 100, 0.16) 62%, transparent 78%);
+}
+#weather.tornado::before {
+  background-image: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.08) 0 24px, transparent 24px 70px);
+  animation: wx-tornado 0.7s linear infinite;
+}
+@keyframes wx-tornado { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(140px, 0, 0); } }
 
 #players { position: absolute; inset: 0; z-index: 1; transform-style: preserve-3d; }
+/* Actors are baked <img> sprites (shadows in the bitmap) so the needle sweep
+   never re-runs a blur over them. --anchor offsets for the bitmap's padding so
+   the glyph's feet stay on the field spot. */
 #players .player {
   position: absolute; top: 50%; transform-origin: center bottom;
-  transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
-  font-size: 1.5rem; opacity: 0.9; transition: left 0.4s ease;
+  transform: translate(-50%, calc(-100% + var(--anchor, 0px))) rotateX(calc(-1 * var(--tilt)));
+  opacity: 0.9; transition: left 0.4s ease;
 }
-#players .player.home { filter: drop-shadow(0 0 5px var(--home)) drop-shadow(0 6px 3px rgba(0, 0, 0, 0.55)); }
-#players .player.away { filter: drop-shadow(0 0 5px var(--away)) drop-shadow(0 6px 3px rgba(0, 0, 0, 0.55)); }
 
 #ball {
   position: absolute; top: 50%; left: 50%; transform-origin: center bottom;
   transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
-  font-size: 2.6rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65)) drop-shadow(0 7px 4px rgba(0, 0, 0, 0.6));
+  font-size: 2.6rem; text-shadow: 0 0 8px rgba(255, 255, 255, 0.65), 0 7px 4px rgba(0, 0, 0, 0.6);
   transition: left 0.4s ease; z-index: 3;
 }
 #firstdown-line {
@@ -376,11 +427,10 @@ kbd {
 #defenders { transform-style: preserve-3d; }
 #defenders .defender {
   position: absolute; top: 50%; transform-origin: center bottom;
-  transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt)));
-  font-size: 2rem; z-index: 2; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 6px 3px rgba(0, 0, 0, 0.55));
+  transform: translate(-50%, calc(-100% + var(--anchor, 0px))) rotateX(calc(-1 * var(--tilt)));
+  z-index: 2;
 }
-#defenders .defender.nearest { transform: translate(-50%, -100%) rotateX(calc(-1 * var(--tilt))) scale(1.4); filter: drop-shadow(0 0 8px var(--amber)); }
-#defenders .defender.rusher { filter: drop-shadow(0 0 8px var(--away)); }
+#defenders .defender.nearest { transform: translate(-50%, calc(-100% + var(--anchor, 0px))) rotateX(calc(-1 * var(--tilt))) scale(1.4); }
 
 #message {
   font-family: var(--display); font-size: 0.95rem; line-height: 1.5;
@@ -392,37 +442,12 @@ kbd {
 #playcall, #kickoff-choice { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 10px 0; position: relative; z-index: 5; }
 #timing-bar { position: relative; z-index: 5; }
 
-/* ---- Timing bar: a semicircular RAINBOW ARC gauge ---- */
+/* ---- Timing bar: a semicircular arc gauge drawn on a <canvas> ---- */
 #timing-bar { margin-top: 10px; display: flex; flex-direction: column; align-items: center; }
 
-/* The bar itself is a rainbow arc: a conic rainbow masked to a top half-ring. */
-.bar-track {
-  position: relative; width: 300px; height: 150px;
-  background: rgba(220, 255, 230, 0.22);
-  -webkit-mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
-  mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
-  filter: drop-shadow(0 0 6px rgba(57, 255, 20, 0.2));
-}
-.bar-track.miss { filter: drop-shadow(0 0 10px #ff3b3b) saturate(0.3) brightness(0.6); }
-
-/* Green target wedge — JS sets the conic-gradient angles each press. */
-.sweet-zone {
-  position: absolute; inset: 0;
-  -webkit-mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
-  mask: radial-gradient(circle at 50% 100%, transparent 0 108px, #000 109px 140px, transparent 141px);
-  filter: drop-shadow(0 0 6px var(--green));
-}
-
-/* Marker is a needle pivoting at the arc's center; JS rotates it. */
-.bar-marker {
-  position: absolute; left: calc(50% - 2px); bottom: 0; width: 4px; height: 134px;
-  transform-origin: 50% 100%; transform: rotate(0deg);
-  background: #fff; border-radius: 2px; box-shadow: 0 0 8px #fff;
-  pointer-events: none; will-change: transform;
-}
-.bar-marker.green { background: var(--green); box-shadow: 0 0 12px var(--green); }
-.bar-marker.yellow { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
-.bar-marker.red { background: #ff3b3b; box-shadow: 0 0 12px #ff3b3b; }
+/* The whole gauge (arc, sweet band, needle) is painted on this canvas each
+   frame — cheap vector strokes, no masks/filters, smooth even without a GPU. */
+#bar-canvas { width: 300px; height: 150px; }
 .timing-hint { margin-top: 8px; opacity: 0.85; letter-spacing: 1px; }
 
 /* Overthrow: the ball sails up into the crowd. */
@@ -432,17 +457,25 @@ kbd {
   100% { transform: translate(-50%, -460%) rotate(540deg); opacity: 0; }
 }
 
-/* ---- EXTREME mode flair ---- */
+/* ---- EXTREME mode flair ----
+   The red glow pulses via the OPACITY of an overlay (compositor-only) instead of
+   animating box-shadow, which would repaint a big blurred shadow every frame for
+   the whole game. The bar glow is a static box-shadow rather than a drop-shadow
+   filter — a filter would re-blur the canvas contents on every needle frame. */
 body.extreme #field {
-  border-color: #ff3b3b;
+  border-color: #ff3b3b; position: relative;
   box-shadow: 0 0 40px rgba(255, 59, 59, 0.5), inset 0 0 50px rgba(0, 0, 0, 0.55);
+}
+body.extreme #field::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 8px; pointer-events: none;
+  box-shadow: 0 0 55px rgba(255, 59, 59, 0.85);
   animation: extreme-pulse 1.2s ease-in-out infinite;
 }
-body.extreme .bar-track { filter: drop-shadow(0 0 12px #ff3b3b); }
+body.extreme #bar-canvas { box-shadow: 0 0 12px #ff3b3b; border-radius: 8px; }
 body.extreme #game-status { color: #ff6b6b; text-shadow: 0 0 10px rgba(255, 59, 59, 0.6); }
 @keyframes extreme-pulse {
-  0%, 100% { box-shadow: 0 0 30px rgba(255, 59, 59, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.55); }
-  50% { box-shadow: 0 0 55px rgba(255, 59, 59, 0.8), inset 0 0 50px rgba(0, 0, 0, 0.55); }
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
 }
 
 /* ---- Battle-pass screen ---- */
