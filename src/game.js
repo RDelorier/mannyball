@@ -13,6 +13,7 @@ import {
 } from './teams.js';
 import { setCoachEnabled, initVoice, coachSay, coachLine } from './voice.js';
 import { CONDITIONS, conditionById } from './conditions.js';
+import { addEntry } from './leaderboard.js';
 
 // Tap/click events used to register a timing press (covers iPad Safari quirks).
 const TAP_EVENTS = ['pointerdown', 'touchstart', 'mousedown'];
@@ -28,6 +29,7 @@ const startScreen = el('start-screen');
 const gameScreen = el('game-screen');
 const winScreen = el('win-screen');
 const bpScreen = el('bp-screen');
+const lbScreen = el('leaderboard-screen');
 
 // ---- Persistent progress (localStorage) ----
 const SAVE_KEY = '1dfb-progress';
@@ -42,6 +44,16 @@ function saveProgress(p) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(p)); } catch { /* storage unavailable */ }
 }
 let progress = loadProgress();
+
+// ---- Leaderboard (localStorage) ----
+const LB_KEY = '1dfb-leaderboard';
+function loadLeaderboard() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY) || '[]'); } catch { return []; }
+}
+function saveLeaderboard(l) {
+  try { localStorage.setItem(LB_KEY, JSON.stringify(l)); } catch { /* storage unavailable */ }
+}
+let leaderboard = loadLeaderboard();
 
 // ---- Config + state ----
 let config = {
@@ -87,7 +99,7 @@ function distanceToGain() {
   return Math.abs(state.lineToGain - state.ballOn);
 }
 function showScreen(screen) {
-  for (const s of [startScreen, gameScreen, winScreen, bpScreen]) s.classList.add('hidden');
+  for (const s of [startScreen, gameScreen, winScreen, bpScreen, lbScreen]) s.classList.add('hidden');
   screen.classList.remove('hidden');
 }
 function setMessage(text) {
@@ -189,6 +201,37 @@ function showBattlePass() {
   }
 
   showScreen(bpScreen);
+}
+
+// Leaderboard screen: top games saved on this device.
+function showLeaderboard() {
+  const list = el('lb-rows');
+  list.innerHTML = '';
+  if (!leaderboard.length) {
+    const li = document.createElement('li');
+    li.className = 'lb-empty';
+    li.textContent = 'No games yet — go win one!';
+    list.appendChild(li);
+  } else {
+    leaderboard.forEach((e, i) => {
+      const li = document.createElement('li');
+      const rank = document.createElement('span');
+      rank.className = 'lb-rank';
+      rank.textContent = `#${i + 1}`;
+      const who = document.createElement('span');
+      who.className = 'lb-who';
+      who.textContent = `${e.emoji || ''} ${e.team}`;
+      const score = document.createElement('span');
+      score.className = 'lb-score';
+      score.textContent = `${e.score} pts`;
+      const mode = document.createElement('span');
+      mode.className = 'lb-mode';
+      mode.textContent = e.mode === '2p' ? '2P' : (e.difficulty || '').toUpperCase();
+      li.append(rank, who, score, mode);
+      list.appendChild(li);
+    });
+  }
+  showScreen(lbScreen);
 }
 
 // ---- Render ----
@@ -294,6 +337,16 @@ function endGame(winner) {
   const leveledUp = levelForXp(after.xp) > levelForXp(before.xp);
   progress = after;
   saveProgress(progress);
+
+  // Record your wins on the local leaderboard.
+  if (humanWon) {
+    const wt = teamFor(winner);
+    leaderboard = addEntry(leaderboard, {
+      team: wt.name, emoji: wt.emoji, score: winnerScore,
+      difficulty: config.difficulty, mode: config.mode, mult,
+    });
+    saveLeaderboard(leaderboard);
+  }
 
   const wTeam = teamFor(winner);
   const home = teamFor('home'), away = teamFor('away');
@@ -764,6 +817,8 @@ el('back-btn').addEventListener('click', showStart);
 el('bp-open-btn').addEventListener('click', showBattlePass);
 el('bp-back-btn').addEventListener('click', showStart);
 el('bp-badge').addEventListener('click', showBattlePass);
+el('lb-open-btn').addEventListener('click', showLeaderboard);
+el('lb-back-btn').addEventListener('click', showStart);
 
 // Populate the start screen (team pickers + battle-pass badge) on load.
 showStart();
