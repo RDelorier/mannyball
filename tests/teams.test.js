@@ -109,7 +109,8 @@ test('unlockedBalls/Fields always include the default and add by level', () => {
   assert.deepEqual(unlockedBalls({ xp: 0 }).map((b) => b.id), ['football']);
   // Lv 3 unlocks the soccer ball (250 * 2 = Lv 3)
   assert.ok(unlockedBalls({ xp: 250 * 2 }).map((b) => b.id).includes('soccer'));
-  assert.deepEqual(unlockedFields({ xp: 0 }).map((f) => f.id), ['classic']);
+  // The free themes are available from the start (not gated by level).
+  assert.deepEqual(unlockedFields({ xp: 0 }).map((f) => f.id), ['classic', 'cosmic', 'desert', 'jungle', 'neon']);
   assert.ok(unlockedFields({ xp: 250 * 4 }).map((f) => f.id).includes('night')); // Lv 5
 });
 

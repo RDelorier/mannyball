@@ -150,6 +150,38 @@ kbd {
 #game-screen #message { margin: 24px 0 8px; }
 
 /* Field themes (battle-pass rewards). Default is the green gridiron above. */
+#field.theme-cosmic #gridiron {
+  background:
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.9) 50%, transparent 50%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255, 255, 255, 0.8) 50%, transparent 50%),
+    radial-gradient(1px 1px at 45% 80%, rgba(190, 210, 255, 0.9) 50%, transparent 50%),
+    radial-gradient(2px 2px at 85% 20%, rgba(255, 255, 255, 0.7) 50%, transparent 50%),
+    repeating-linear-gradient(90deg, transparent 0 9.6%, rgba(180, 140, 255, 0.16) 9.6% 10%),
+    linear-gradient(180deg, #1a0b3a 0%, #0a0420 100%);
+}
+#field.theme-cosmic { border-color: #b58cff; box-shadow: 0 0 36px rgba(181, 140, 255, 0.35), inset 0 0 50px rgba(0, 0, 0, 0.6); }
+#field.theme-desert #gridiron {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9.6%, rgba(120, 80, 30, 0.18) 9.6% 10%),
+    repeating-linear-gradient(0deg, rgba(180, 130, 70, 0.12) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #e3b870 0%, #c2904a 100%);
+}
+#field.theme-desert { border-color: #ffd98a; box-shadow: 0 0 36px rgba(255, 200, 110, 0.3), inset 0 0 50px rgba(80, 50, 10, 0.4); }
+#field.theme-jungle #gridiron {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9.6%, rgba(180, 255, 120, 0.14) 9.6% 10%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #14401a 0%, #07260f 100%);
+}
+#field.theme-jungle { border-color: #6cff7a; box-shadow: 0 0 36px rgba(80, 220, 90, 0.3), inset 0 0 50px rgba(0, 0, 0, 0.6); }
+#field.theme-neon #gridiron {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9.6%, rgba(255, 60, 200, 0.4) 9.6% 9.8%),
+    repeating-linear-gradient(0deg, rgba(60, 230, 255, 0.18) 0 1px, transparent 1px 14px),
+    linear-gradient(180deg, #14021f 0%, #05000a 100%);
+}
+#field.theme-neon { border-color: #ff3cc8; box-shadow: 0 0 36px rgba(255, 60, 200, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.7); }
+#field.theme-neon #gridiron::after { background: rgba(60, 230, 255, 0.6); box-shadow: 0 0 8px rgba(60, 230, 255, 0.8); }
 #field.theme-night #gridiron {
   background:
     repeating-linear-gradient(90deg, transparent 0 9.6%, rgba(120, 180, 255, 0.16) 9.6% 10%),

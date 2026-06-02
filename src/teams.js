@@ -114,6 +114,10 @@ export const BALL_SKINS = {
 
 export const FIELD_THEMES = {
   classic: { name: 'Classic Green' },
+  cosmic:  { name: 'Cosmic' },
+  desert:  { name: 'Desert' },
+  jungle:  { name: 'Jungle' },
+  neon:    { name: 'Neon Arcade' },
   night:   { name: 'Night' },
   sunset:  { name: 'Sunset' },
   ice:     { name: 'Ice' },
@@ -155,10 +159,12 @@ export function unlockedBalls(progress) {
   return ids.map((id) => ({ id, ...BALL_SKINS[id] }));
 }
 
-// Unlocked field themes for the given progress (always includes the default).
+// Unlocked field themes for the given progress. The free themes below are
+// available from the start; the rest unlock through the battle pass.
+const FREE_FIELDS = ['classic', 'cosmic', 'desert', 'jungle', 'neon'];
 export function unlockedFields(progress) {
   const lvl = levelForXp(progress.xp || 0);
-  const ids = ['classic', ...REWARD_TRACK.filter((r) => r.kind === 'field' && lvl >= r.level).map((r) => r.value)];
+  const ids = [...FREE_FIELDS, ...REWARD_TRACK.filter((r) => r.kind === 'field' && lvl >= r.level).map((r) => r.value)];
   return ids.map((id) => ({ id, ...FIELD_THEMES[id] }));
 }
 
